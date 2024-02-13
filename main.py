@@ -11,24 +11,49 @@ def process_pdf(pdf_path, keywords):
     found_date = None  # Здесь будем хранить найденную дату
 
     with fitz.open(pdf_path) as pdf:
-        for page in pdf:
-            # Получаем текст на странице
+        for page_num in range(len(pdf)):
+            page = pdf.load_page(page_num)
             text = page.get_text()
 
-            # Поиск ключевых слов
-            for keyword in keywords:
-                if keyword in text:
-                    print(f"Ключевое слово '{keyword}' найдено")
-                    found_keywords.append(keyword)
+            if text:  # Если на странице есть текст
+                # Поиск ключевых слов
+                for keyword in keywords:
+                    if keyword in text:
+                        print(f"Ключевое слово '{keyword}' найдено")
+                        found_keywords.append(keyword)
 
-            # Поиск даты
-            if not found_date:  # Проверяем, была ли найдена дата ранее
-                date = find_dates(text)
-                if date:
-                    print("Дата найдена:", date)
-                    found_date = date
+                # Поиск даты
+                if not found_date:  # Проверяем, была ли найдена дата ранее
+                    date = find_dates(text)
+                    if date:
+                        print("Дата найдена:", date)
+                        found_date = date
+
+            else:  # Если на странице нет текста, попытаемся найти его в виде изображения
+                images = page.get_images(full=True)
+                for img_index, img in enumerate(images):
+                    xref = img[0]
+                    base_image = pdf.extract_image(xref)
+                    image_bytes = base_image["image"]
+
+                    # Распознаем текст на изображении
+                    result = reader.readtext(image_bytes)
+                    for detection in result:
+                        text = detection[1]
+                        for keyword in keywords:
+                            if keyword in text:
+                                print(f"Ключевое слово '{keyword}' найдено")
+                                found_keywords.append(keyword)
+
+                        # Поиск даты в тексте
+                        if not found_date:  # Проверяем, была ли найдена дата ранее
+                            date = find_dates(text)
+                            if date:
+                                print("Дата найдена:", date)
+                                found_date = date
 
     return found_keywords, found_date
+
 
 def process_image(image_path, keywords):
     reader = easyocr.Reader(['en', 'ru'])
