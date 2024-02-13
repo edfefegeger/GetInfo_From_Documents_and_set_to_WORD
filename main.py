@@ -8,6 +8,8 @@ def process_pdf(pdf_path, keywords):
 
     # Поиск ключевых слов и даты
     found_keywords = []
+    found_date = None  # Здесь будем хранить найденную дату
+
     with fitz.open(pdf_path) as pdf:
         for page in pdf:
             # Получаем изображения на странице
@@ -32,41 +34,54 @@ def process_pdf(pdf_path, keywords):
                         print(f"Ключевое слово не найдено в тексте: {text}")
 
                     # Поиск даты в тексте
-                    date = find_dates(text)
-                    if date:
-                        print("Дата найдена:", date)
-                        found_keywords.append(date)
+                    if not found_date:  # Проверяем, была ли найдена дата ранее
+                        date = find_dates(text)
+                        if date:
+                            print("Дата найдена:", date)
+                            found_date = date
 
-    return found_keywords
+    return found_keywords, found_date
 
 def find_dates(text):
     # Шаблон для поиска даты в формате DD.MM.YYYY
-    date_pattern = r'\b\d{2}\.\d{2}\.\d{4}\b'
+    date_pattern = r'\b\d{2}[,.]?\d{2}[,.]?\d{4}\b'
 
     # Находим первое совпадение с шаблоном
     match = re.search(date_pattern, text)
     if match:
+        print("Дата найдена:", match.group())
         return match.group()
     else:
+        print("Дата не найдена")
         return None
 
+
 def update_word_table(pdf_path, keywords, word_path):
-    found_keywords = process_pdf(pdf_path, keywords)
+    found_keywords, found_date = process_pdf(pdf_path, keywords)
 
     doc = Document(word_path)
-    table = doc.tables[0]  
+    table = doc.tables[0]
 
+    # Добавляем новую строку в таблицу
+    new_row_index = len(table.rows)
+    new_row = table.add_row()
+
+    # Находим индекс столбца "Наименование документа"
     for cell in table.rows[0].cells:
         if cell.text.strip() == "Наименование документа":
             column_index = cell._element.getparent().index(cell._element)
-
-    new_row_index = 1 
-    new_row = table.add_row()
+            break
 
     if found_keywords:
-        table.cell(new_row_index + 1, column_index).text = found_keywords[0]  
+        found_keyword = found_keywords[0]
+        table.cell(new_row_index, column_index).text = found_keyword
+
+        # Добавляем дату в конец найденного ключевого слова
+        if found_date:
+            table.cell(new_row_index, column_index).text += f", от {found_date}"
 
     doc.save(word_path)
+
 
 if __name__ == "__main__":
     pdf_path = input("Введите путь к PDF-файлу: ")
