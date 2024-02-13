@@ -12,33 +12,46 @@ def process_pdf(pdf_path, keywords):
 
     with fitz.open(pdf_path) as pdf:
         for page in pdf:
-            # Получаем изображения на странице
-            images = page.get_images(full=True)
-            for img_index, img in enumerate(images):
-                xref = img[0]
-                base_image = pdf.extract_image(xref)
-                image_bytes = base_image["image"]
+            # Получаем текст на странице
+            text = page.get_text()
 
-                # Распознаем текст на изображении
-                result = reader.readtext(image_bytes)
-                for detection in result:
-                    text = detection[1]
-                    found = False
-                    for keyword in keywords:
-                        if keyword in text:
-                            print(f"Ключевое слово '{keyword}' найдено")
-                            found_keywords.append(keyword)
-                            found = True
-                            break
-                    if not found:
-                        print(f"Ключевое слово не найдено в тексте: {text}")
+            # Поиск ключевых слов
+            for keyword in keywords:
+                if keyword in text:
+                    print(f"Ключевое слово '{keyword}' найдено")
+                    found_keywords.append(keyword)
 
-                    # Поиск даты в тексте
-                    if not found_date:  # Проверяем, была ли найдена дата ранее
-                        date = find_dates(text)
-                        if date:
-                            print("Дата найдена:", date)
-                            found_date = date
+            # Поиск даты
+            if not found_date:  # Проверяем, была ли найдена дата ранее
+                date = find_dates(text)
+                if date:
+                    print("Дата найдена:", date)
+                    found_date = date
+
+    return found_keywords, found_date
+
+def process_image(image_path, keywords):
+    reader = easyocr.Reader(['en', 'ru'])
+
+    # Поиск ключевых слов и даты
+    found_keywords = []
+    found_date = None  # Здесь будем хранить найденную дату
+
+    # Распознаем текст на изображении
+    result = reader.readtext(image_path)
+    for detection in result:
+        text = detection[1]
+        for keyword in keywords:
+            if keyword in text:
+                print(f"Ключевое слово '{keyword}' найдено")
+                found_keywords.append(keyword)
+
+        # Поиск даты в тексте
+        if not found_date:  # Проверяем, была ли найдена дата ранее
+            date = find_dates(text)
+            if date:
+                print("Дата найдена:", date)
+                found_date = date
 
     return found_keywords, found_date
 
@@ -55,9 +68,14 @@ def find_dates(text):
         print("Дата не найдена")
         return None
 
-
-def update_word_table(pdf_path, keywords, word_path):
-    found_keywords, found_date = process_pdf(pdf_path, keywords)
+def update_word_table(file_path, keywords, word_path):
+    if file_path.endswith('.pdf'):
+        found_keywords, found_date = process_pdf(file_path, keywords)
+    elif file_path.endswith(('.jpg', '.jpeg')):
+        found_keywords, found_date = process_image(file_path, keywords)
+    else:
+        print("Неподдерживаемый формат файла.")
+        return
 
     doc = Document(word_path)
     table = doc.tables[0]
@@ -82,9 +100,8 @@ def update_word_table(pdf_path, keywords, word_path):
 
     doc.save(word_path)
 
-
 if __name__ == "__main__":
-    pdf_path = input("Введите путь к PDF-файлу: ")
+    file_path = input("Введите путь к файлу (PDF, JPEG): ")
     word_path = "test.docx"
     keywords = input("Введите ключевые слова через пробел: ").split()
-    update_word_table(pdf_path, keywords, word_path)
+    update_word_table(file_path, keywords, word_path)
