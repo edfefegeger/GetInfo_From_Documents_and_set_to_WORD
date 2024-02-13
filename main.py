@@ -2,9 +2,10 @@ import fitz
 import easyocr
 from docx import Document
 import re
-
+import torch
+print(torch.cuda.is_available())
 def process_pdf(pdf_path, keywords):
-    reader = easyocr.Reader(['en', 'ru'])
+    reader = easyocr.Reader(['en', 'ru'], gpu = True)
 
     # Поиск ключевых слов и даты
     found_keywords = []
@@ -56,7 +57,7 @@ def process_pdf(pdf_path, keywords):
 
 
 def process_image(image_path, keywords):
-    reader = easyocr.Reader(['en', 'ru'])
+    reader = easyocr.Reader(['en', 'ru'], gpu= True)
 
     # Поиск ключевых слов и даты
     found_keywords = []
