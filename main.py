@@ -123,13 +123,17 @@ def update_word_table(file_path, keywords, word_path):
             print(f"Описание для ключа '{found_keyword}' не найдено.")
             return
         
-        table.cell(new_row_index, column_index).text = key_description
+        # Добавляем текст описания ключа в ячейку таблицы
+        cell = table.cell(new_row_index, column_index)
+        cell.text = key_description
 
         # Добавляем дату в конец найденного описания ключа
         if found_date:
-            table.cell(new_row_index, column_index).text += f", от {found_date}"
+            cell.text += f", от {found_date}"
 
     doc.save(word_path)
+
+
 def read_keys(keys_path):
     keys = {}
     doc = Document(keys_path)
@@ -138,7 +142,7 @@ def read_keys(keys_path):
         key = row.cells[0].text.strip()  # Берем текст из второй ячейки в строке (столбец "Значение ключа")
         key_description = row.cells[1].text.strip()  # Берем текст из третьей ячейки в строке (столбец "Описание ключа")
         keys[key] = key_description
-        print(f"Ключ '{key}' С описанием: '{key_description}'")
+        print(f"Добавлен Ключ: '{key}' С описанием: '{key_description}'")
     return keys
 
 if __name__ == "__main__":
