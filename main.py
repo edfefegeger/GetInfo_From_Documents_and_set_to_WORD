@@ -124,9 +124,21 @@ def update_word_table(file_path, keywords, word_path):
             table.cell(new_row_index, column_index).text += f", от {found_date}"
 
     doc.save(word_path)
+def read_keys(keys_path):
+    keys = []
+    doc = Document(keys_path)
+    table = doc.tables[0]  # Предполагаем, что таблица находится на первой странице документа
+    for row in table.rows[1:]:  # Пропускаем первую строку, так как это заголовок
+        key = row.cells[1].text.strip()  # Берем текст из второй ячейки в строке (столбец "Значение ключа")
+        keys.append(key)
+        print(f"Получен ключ: {key}")
+    return keys
+
+
 
 if __name__ == "__main__":
     file_path = input("Введите путь к файлу (PDF, JPEG): ")
-    word_path = "test.docx"
-    keywords = input("Введите ключевые слова через пробел: ").split()
+    word_path = "result.docx"
+    keys_path = "keys.docx"
+    keywords = read_keys(keys_path)
     update_word_table(file_path, keywords, word_path)
