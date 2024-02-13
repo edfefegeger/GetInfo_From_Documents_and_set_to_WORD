@@ -90,10 +90,9 @@ def find_dates(text):
         print("Дата найдена:", match.group())
         return match.group()
     else:
-        print("Дата не найдена")
         return None
 
-def update_word_table(file_path, keywords, word_path):
+def update_word_table(file_path, keywords, word_path, key_description):
     if file_path.endswith('.pdf'):
         found_keywords, found_date = process_pdf(file_path, keywords)
     elif file_path.endswith(('.jpg', '.jpeg')):
@@ -117,21 +116,29 @@ def update_word_table(file_path, keywords, word_path):
 
     if found_keywords:
         found_keyword = found_keywords[0]
-        table.cell(new_row_index, column_index).text = found_keyword
+        # key_description = ""  # Здесь нет необходимости, так как описание уже было прочитано из таблицы в функции read_keys()
+
+        table.cell(new_row_index, column_index).text = {key_description}
 
         # Добавляем дату в конец найденного ключевого слова
         if found_date:
             table.cell(new_row_index, column_index).text += f", от {found_date}"
 
     doc.save(word_path)
+
+
 def read_keys(keys_path):
     keys = []
     doc = Document(keys_path)
     table = doc.tables[0]  # Предполагаем, что таблица находится на первой странице документа
     for row in table.rows[1:]:  # Пропускаем первую строку, так как это заголовок
-        key = row.cells[1].text.strip()  # Берем текст из второй ячейки в строке (столбец "Значение ключа")
+        key = row.cells[0].text.strip()  # Берем текст из второй ячейки в строке (столбец "Значение ключа")
+        key_description = row.cells[1].text.strip()  # Берем текст из третьей ячейки в строке (столбец "Описание ключа")
+
         keys.append(key)
         print(f"Получен ключ: {key}")
+        print(f"Описание ключа: {key_description}")
+
     return keys
 
 
@@ -140,5 +147,6 @@ if __name__ == "__main__":
     file_path = input("Введите путь к файлу (PDF, JPEG): ")
     word_path = "result.docx"
     keys_path = "keys.docx"
-    keywords = read_keys(keys_path)
-    update_word_table(file_path, keywords, word_path)
+    keywords, key_description = read_keys(keys_path)  # Сохраняем возвращаемые значения
+    update_word_table(file_path, keywords, word_path, key_description)  # Передаем key_description в функцию
+
