@@ -4,8 +4,8 @@ from docx import Document
 import re
 import torch
 print(torch.cuda.is_available())
-def process_pdf(pdf_path, keywords):
-    reader = easyocr.Reader(['en', 'ru'], gpu = True)
+def process_pdf(pdf_path, keywords, word_path):
+    reader = easyocr.Reader(['en', 'ru'], gpu=True)
 
     # Поиск ключевых слов и даты
     found_keywords = []
@@ -16,12 +16,36 @@ def process_pdf(pdf_path, keywords):
             page = pdf.load_page(page_num)
             text = page.get_text()
 
-            if text:  # Если на странице есть текст
+            print(f"Обрабатывается страница {page_num + 1}...")
+            
+            if "End" in text:  # Проверяем, содержит ли страница пометку "End"
+                print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
+                update_word_table(word_path, keywords, found_keywords, found_date)
+                # Сбрасываем данные о ключевых словах и дате для следующего документа
+                found_keywords = []
+                found_date = None
+
+            # Если на странице есть текст или изображения, обрабатываем ее
+            images = page.get_images(full=True)
+            if text or images:
                 # Поиск ключевых слов
                 for keyword in keywords:
                     if keyword in text:
                         print(f"Ключевое слово '{keyword}' найдено")
                         found_keywords.append(keyword)
+                
+                # Поиск текста в изображениях
+                for img_index, img in enumerate(images):
+                    xref = img[0]
+                    base_image = pdf.extract_image(xref)
+                    image_bytes = base_image["image"]
+                    result = reader.readtext(image_bytes)
+                    for detection in result:
+                        img_text = detection[1]
+                        for keyword in keywords:
+                            if keyword in img_text:
+                                print(f"Ключевое слово '{keyword}' найдено в изображении")
+                                found_keywords.append(keyword)
 
                 # Поиск даты
                 if not found_date:  # Проверяем, была ли найдена дата ранее
@@ -30,34 +54,49 @@ def process_pdf(pdf_path, keywords):
                         print("Дата найдена:", date)
                         found_date = date
 
-            else:  # Если на странице нет текста, попытаемся найти его в виде изображения
-                images = page.get_images(full=True)
-                for img_index, img in enumerate(images):
-                    xref = img[0]
-                    base_image = pdf.extract_image(xref)
-                    image_bytes = base_image["image"]
-
-                    # Распознаем текст на изображении
-                    result = reader.readtext(image_bytes)
-                    for detection in result:
-                        text = detection[1]
-                        for keyword in keywords:
-                            if keyword in text:
-                                print(f"Ключевое слово '{keyword}' найдено")
-                                found_keywords.append(keyword)
-
-                        # Поиск даты в тексте
-                        if not found_date:  # Проверяем, была ли найдена дата ранее
-                            date = find_dates(text)
-                            if date:
-                                print("Дата найдена:", date)
-                                found_date = date
+        # Записываем информацию в файл Word после окончания обработки документа
+        update_word_table(word_path, keywords, found_keywords, found_date)
 
     return found_keywords, found_date
 
 
-def process_image(image_path, keywords):
-    reader = easyocr.Reader(['en', 'ru'], gpu= True)
+def update_word_table(word_path, keywords, found_keywords, found_date):
+    doc = Document(word_path)
+    table = doc.tables[0]
+
+    # Находим индекс столбца "Наименование документа"
+    for cell in table.rows[0].cells:
+        if cell.text.strip() == "Наименование документа":
+            column_index = cell._element.getparent().index(cell._element)
+            break
+
+    if found_keywords:
+        for found_keyword in found_keywords:
+            # Ищем описание ключа по найденному ключевому слову
+            key_description = keywords.get(found_keyword)
+            if key_description is None:
+                print(f"Описание для ключа '{found_keyword}' не найдено.")
+                return
+            
+            # Добавляем новую строку в таблицу
+            new_row_index = len(table.rows)
+            new_row = table.add_row()
+
+            # Добавляем текст описания ключа в ячейку таблицы
+            cell = table.cell(new_row_index, column_index)
+            cell.text = key_description
+
+            # Добавляем дату в конец найденного описания ключа
+            if found_date:
+                cell.text += f", от {found_date}"
+
+    doc.save(word_path)
+
+
+
+
+def process_image(image_path, keywords, word_path):
+    reader = easyocr.Reader(['en', 'ru'], gpu=True)
 
     # Поиск ключевых слов и даты
     found_keywords = []
@@ -79,6 +118,8 @@ def process_image(image_path, keywords):
                 print("Дата найдена:", date)
                 found_date = date
 
+    update_word_table(word_path, keywords, found_keywords, found_date)
+
     return found_keywords, found_date
 
 def find_dates(text):
@@ -93,46 +134,7 @@ def find_dates(text):
     else:
         return None
 
-def update_word_table(file_path, keywords, word_path):
-    if file_path.endswith('.pdf'):
-        found_keywords, found_date = process_pdf(file_path, keywords)
-    elif file_path.endswith(('.jpg', '.jpeg')):
-        found_keywords, found_date = process_image(file_path, keywords)
-    else:
-        print("Неподдерживаемый формат файла.")
-        return
 
-    doc = Document(word_path)
-    table = doc.tables[0]
-
-    # Добавляем новую строку в таблицу
-    new_row_index = len(table.rows)
-    new_row = table.add_row()
-
-    # Находим индекс столбца "Наименование документа"
-    for cell in table.rows[0].cells:
-        if cell.text.strip() == "Наименование документа":
-            column_index = cell._element.getparent().index(cell._element)
-            break
-
-    if found_keywords:
-        found_keyword = found_keywords[0]
-        
-        # Ищем описание ключа по найденному ключевому слову
-        key_description = keywords.get(found_keyword)
-        if key_description is None:
-            print(f"Описание для ключа '{found_keyword}' не найдено.")
-            return
-        
-        # Добавляем текст описания ключа в ячейку таблицы
-        cell = table.cell(new_row_index, column_index)
-        cell.text = key_description
-
-        # Добавляем дату в конец найденного описания ключа
-        if found_date:
-            cell.text += f", от {found_date}"
-
-    doc.save(word_path)
 
 
 def read_keys(keys_path):
@@ -151,4 +153,5 @@ if __name__ == "__main__":
     word_path = "result.docx"
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
-    update_word_table(file_path, keywords, word_path)  # Передаем словарь с описаниями ключей в функцию
+    found_keywords, found_date = process_pdf(file_path, keywords, word_path)
+    update_word_table(word_path, keywords, found_keywords, found_date)  # Передаем словарь с описаниями ключей в функцию
