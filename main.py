@@ -63,7 +63,7 @@ def process_pdf(pdf_path, keywords, word_path):
                     found_date = None        
 
         # Записываем информацию в файл Word после окончания обработки документа
-        update_word_table(word_path, keywords, found_keywords, found_date)
+        
 
     return found_keywords, found_date
 
