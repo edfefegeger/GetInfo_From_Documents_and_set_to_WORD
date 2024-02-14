@@ -4,6 +4,7 @@ from docx import Document
 import re
 import torch
 print(torch.cuda.is_available())
+
 def process_pdf(pdf_path, keywords, word_path):
     reader = easyocr.Reader(['en', 'ru'], gpu=True)
 
@@ -18,12 +19,7 @@ def process_pdf(pdf_path, keywords, word_path):
 
             print(f"Обрабатывается страница {page_num + 1}...")
             
-            if "End" in text:  # Проверяем, содержит ли страница пометку "End"
-                print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
-                update_word_table(word_path, keywords, found_keywords, found_date)
-                # Сбрасываем данные о ключевых словах и дате для следующего документа
-                found_keywords = []
-                found_date = None
+
 
             # Если на странице есть текст или изображения, обрабатываем ее
             images = page.get_images(full=True)
@@ -53,9 +49,16 @@ def process_pdf(pdf_path, keywords, word_path):
                     if date:
                         print("Дата найдена:", date)
                         found_date = date
+                if "End" in text:  # Проверяем, содержит ли страница пометку "End"
+                    print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
+                    update_word_table(word_path, keywords, found_keywords, found_date)
+                    # Сбрасываем данные о ключевых словах и дате для следующего документа
+                    found_keywords = []
+                    found_date = None        
 
         # Записываем информацию в файл Word после окончания обработки документа
         update_word_table(word_path, keywords, found_keywords, found_date)
+
 
     return found_keywords, found_date
 
@@ -70,29 +73,36 @@ def update_word_table(word_path, keywords, found_keywords, found_date):
             column_index = cell._element.getparent().index(cell._element)
             break
 
+    # Добавляем новую строку в таблицу
+    new_row_index = len(table.rows)
+    new_row = table.add_row()
+
+    # Список уже добавленных ключей
+    added_keywords = []
+
+    # Если найдены ключевые слова, добавляем их и дату в таблицу
+    cell = table.cell(new_row_index, column_index)
     if found_keywords:
         for found_keyword in found_keywords:
-            # Ищем описание ключа по найденному ключевому слову
+            # Если ключ уже добавлен, пропускаем его
+            if found_keyword in added_keywords:
+                continue
+            
             key_description = keywords.get(found_keyword)
             if key_description is None:
                 print(f"Описание для ключа '{found_keyword}' не найдено.")
-                return
+                continue
             
-            # Добавляем новую строку в таблицу
-            new_row_index = len(table.rows)
-            new_row = table.add_row()
-
-            # Добавляем текст описания ключа в ячейку таблицы
-            cell = table.cell(new_row_index, column_index)
-            cell.text = key_description
-
-            # Добавляем дату в конец найденного описания ключа
+            cell.text += f"{key_description}"
             if found_date:
                 cell.text += f", от {found_date}"
+            
+            # Добавляем ключ в список уже добавленных
+            added_keywords.append(found_keyword)
+    else:
+        cell.text += ""  # Добавляем пустую строку, если ключевые слова не найдены
 
     doc.save(word_path)
-
-
 
 
 def process_image(image_path, keywords, word_path):
@@ -133,9 +143,6 @@ def find_dates(text):
         return match.group()
     else:
         return None
-
-
-
 
 def read_keys(keys_path):
     keys = {}
