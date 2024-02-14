@@ -3,7 +3,6 @@ import easyocr
 from docx import Document
 import re
 import torch
-print(torch.cuda.is_available())
 
 def process_pdf(pdf_path, keywords, word_path):
     reader = easyocr.Reader(['en', 'ru'], gpu=True)
@@ -18,17 +17,22 @@ def process_pdf(pdf_path, keywords, word_path):
             text = page.get_text()
 
             print(f"Обрабатывается страница {page_num + 1}...")
-            
-
 
             # Если на странице есть текст или изображения, обрабатываем ее
             images = page.get_images(full=True)
             if text or images:
+
                 # Поиск ключевых слов
                 for keyword in keywords:
                     if keyword in text:
                         print(f"Ключевое слово '{keyword}' найдено")
                         found_keywords.append(keyword)
+                if not found_date:  # Проверяем, была ли найдена дата ранее
+                    date = find_dates(text)
+                    if date:
+                        print("Дата найдена:", date)
+                        found_date = date 
+
                 
                 # Поиск текста в изображениях
                 for img_index, img in enumerate(images):
@@ -38,27 +42,28 @@ def process_pdf(pdf_path, keywords, word_path):
                     result = reader.readtext(image_bytes)
                     for detection in result:
                         img_text = detection[1]
+                        text = detection[1]
                         for keyword in keywords:
+                            
                             if keyword in img_text:
                                 print(f"Ключевое слово '{keyword}' найдено в изображении")
                                 found_keywords.append(keyword)
+                        if not found_date:  # Проверяем, была ли найдена дата ранее
+                            date = find_dates(text)
+                            if date:
+                                print("Дата найдена:", date)
+                                found_date = date 
+                    
+                    # Попробуйте извлечь текст из изображения и добавить его к тексту страниц
 
-                # Поиск даты
-                if not found_date:  # Проверяем, была ли найдена дата ранее
-                    date = find_dates(text)
-                    if date:
-                        print("Дата найдена:", date)
-                        found_date = date
-                if "End" in text:  # Проверяем, содержит ли страница пометку "End"
+                if "End" in text:  
                     print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
                     update_word_table(word_path, keywords, found_keywords, found_date)
-                    # Сбрасываем данные о ключевых словах и дате для следующего документа
                     found_keywords = []
                     found_date = None        
 
         # Записываем информацию в файл Word после окончания обработки документа
         update_word_table(word_path, keywords, found_keywords, found_date)
-
 
     return found_keywords, found_date
 
@@ -124,9 +129,12 @@ def process_image(image_path, keywords, word_path):
         # Поиск даты в тексте
         if not found_date:  # Проверяем, была ли найдена дата ранее
             date = find_dates(text)
+            
             if date:
                 print("Дата найдена:", date)
                 found_date = date
+            else:
+                print("Дата не найдена")
 
     update_word_table(word_path, keywords, found_keywords, found_date)
 
