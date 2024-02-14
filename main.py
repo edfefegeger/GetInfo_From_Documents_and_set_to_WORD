@@ -76,6 +76,15 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     doc = Document(word_path)
     table = doc.tables[0]
 
+    # Находим индекс столбца "№ з/п"
+    for cell in table.rows[0].cells:
+        if cell.text.strip() == "№ з/п":
+            num_index = cell._element.getparent().index(cell._element) - 2
+        else:
+            print("Не найден столбец № з/п")
+
+            break  
+
     # Находим индекс столбца "Наименование документа"
     for cell in table.rows[0].cells:
         if cell.text.strip() == "Наименование документа":
@@ -122,6 +131,10 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     list_cell.text = pages_range
     list_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
 
+    list_num = table.cell(new_row_index, num_index + 1)
+    list_num.text = str(new_row_index)
+    list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+    
     # Устанавливаем выравнивание по центру для ячейки с диапазоном страниц
     for paragraph in list_cell.paragraphs:
         for run in paragraph.runs:
