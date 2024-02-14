@@ -126,13 +126,17 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         cell.text += ""  # Добавляем пустую строку, если ключевые слова не найдены
 
     # Добавляем диапазон страниц в столбец "Номера листов"
-    pages_range = f"{start_page}-{end_page}"
+    if start_page == end_page:
+        pages_range = f"{start_page}"" "
+    else:
+        pages_range = f"{start_page}-{end_page}"
+
     list_cell = table.cell(new_row_index, list_index)
     list_cell.text = pages_range
     list_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
 
     list_num = table.cell(new_row_index, num_index + 1)
-    list_num.text = str(new_row_index)
+    list_num.text = str(new_row_index - 1)
     list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
     
     # Устанавливаем выравнивание по центру для ячейки с диапазоном страниц
