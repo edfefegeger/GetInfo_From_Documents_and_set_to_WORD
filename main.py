@@ -3,6 +3,7 @@ import easyocr
 from docx import Document
 import re
 import torch
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 def process_pdf(pdf_path, keywords, word_path):
     reader = easyocr.Reader(['en', 'ru'], gpu=True)
@@ -117,9 +118,17 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
 
     # Добавляем диапазон страниц в столбец "Номера листов"
     pages_range = f"{start_page}-{end_page}"
-    table.cell(new_row_index, list_index).text = pages_range
+    list_cell = table.cell(new_row_index, list_index)
+    list_cell.text = pages_range
+    list_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+
+    # Устанавливаем выравнивание по центру для ячейки с диапазоном страниц
+    for paragraph in list_cell.paragraphs:
+        for run in paragraph.runs:
+            run.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     doc.save(word_path)
+
 
 
 
