@@ -47,14 +47,21 @@ def process_pdf(pdf_path, keywords, word_path):
                         print("Дата найдена:", date)
                         found_date = date 
 
-                if "End" in text:  
-                    print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
-                    end_page = page_num + 1  # Конечная страница текущего документа
+                if len(pdf) == 1:  # Если документ содержит только одну страницу
+                    print("Документ содержит только одну страницу. Завершение обработки.")
+                    end_page = 1  # Конечная страница текущего документа
                     update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page)
                     found_keywords = []
                     found_date = None
-                    start_page = page_num + 2  # Начальная страница следующего документа       
-
+                else:
+                    if "End" in text:  
+                        print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
+                        end_page = page_num + 1  # Конечная страница текущего документа
+                        update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page)
+                        found_keywords = []
+                        found_date = None
+                        start_page = page_num + 2  # Начальная страница следующего документа      
+                
         # Записываем информацию в файл Word после окончания обработки документа
 
     return found_keywords, found_date
@@ -200,8 +207,9 @@ def find_first_matching_number(word_path):
         text = paragraph.text
         match = re.search(r'№\d{1,5}дск', text)  # Регулярное выражение для поиска номера
         if match:
-            return match.group()
             print("Номер найден после №:", match.group())
+            return match.group()
+            
     return None
 
 
