@@ -26,6 +26,16 @@ def process_pdf(pdf_path, keywords, word_path):
             images = page.get_images(full=True)
             if text or images:
 
+                # Поиск текста в изображениях
+                for img_index, img in enumerate(images):
+                    xref = img[0]
+                    base_image = pdf.extract_image(xref)
+                    image_bytes = base_image["image"]
+                    result = reader.readtext(image_bytes)
+                    for detection in result:
+                        img_text = detection[1]
+                        text += " " + img_text  # Добавляем текст изображения к тексту страницы
+
                 # Поиск ключевых слов
                 for keyword in keywords:
                     if keyword in text:
@@ -36,28 +46,6 @@ def process_pdf(pdf_path, keywords, word_path):
                     if date:
                         print("Дата найдена:", date)
                         found_date = date 
-
-                # Поиск текста в изображениях
-                for img_index, img in enumerate(images):
-                    xref = img[0]
-                    base_image = pdf.extract_image(xref)
-                    image_bytes = base_image["image"]
-                    result = reader.readtext(image_bytes)
-                    for detection in result:
-                        img_text = detection[1]
-                        text = detection[1]
-                        for keyword in keywords:
-                            
-                            if keyword in img_text:
-                                print(f"Ключевое слово '{keyword}' найдено в изображении")
-                                found_keywords.append(keyword)
-                        if not found_date:  # Проверяем, была ли найдена дата ранее
-                            date = find_dates(text)
-                            if date:
-                                print("Дата найдена:", date)
-                                found_date = date 
-                    
-                    # Попробуйте извлечь текст из изображения и добавить его к тексту страниц
 
                 if "End" in text:  
                     print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
@@ -70,6 +58,7 @@ def process_pdf(pdf_path, keywords, word_path):
         # Записываем информацию в файл Word после окончания обработки документа
 
     return found_keywords, found_date
+
 
 
 
@@ -225,4 +214,7 @@ if __name__ == "__main__":
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
     found_keywords, found_date = process_pdf(file_path, keywords, word_path)
-    update_word_table(word_path, keywords, found_keywords, found_date)  # Передаем словарь с описаниями ключей в функцию
+    try:
+        update_word_table(word_path, keywords, found_keywords, found_date)  # Передаем словарь с описаниями ключей в функцию
+    except Exception as e:
+        print("Конец")
