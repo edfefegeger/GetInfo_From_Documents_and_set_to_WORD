@@ -107,12 +107,12 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             if key_description is None:
                 print(f"Описание для ключа '{found_keyword}' не найдено.")
                 continue
-            if found_date:
-                cell.text += f", от {found_date}"
-            # Добавляем текст с форматированием
             key_text = key_description['description']
-            key_format = key_description['format']
+            if found_date:
+                key_text += f", от {found_date}"
             run = cell.add_paragraph().add_run(key_text)
+            # Добавляем текст с форматированием
+            key_format = key_description['format']
             
             # Применяем форматирование к тексту
             if key_format['bold'] is not None:
