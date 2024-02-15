@@ -81,9 +81,6 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     for cell in table.rows[0].cells:
         if cell.text.strip() == "№ з/п":
             num_index = cell._element.getparent().index(cell._element) - 2
-        else:
-            print("Не найден столбец № з/п")
-
             break  
 
     # Находим индекс столбца "Наименование документа"
