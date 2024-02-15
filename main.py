@@ -117,14 +117,22 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             cell.text += f"{key_description}"
             if found_date:
                 cell.text += f", от {found_date}"
-            
+           
             # Добавляем ключ в список уже добавленных
             added_keywords.append(found_keyword)
 
             run = cell.paragraphs[0].runs[0]
             font = run.font
-            font_size = 9  # Устанавливаем желаемый размер шрифта
-            font.size = Pt(font_size)
+            num_char = len(cell.text)
+            print(f"Добавлено {num_char} символов для страницы:")
+
+            if num_char >= 30:
+                font_size = 9  # Устанавливаем желаемый размер шрифта
+                font.size = Pt(font_size)
+            if num_char >= 65:
+                font_size = 7.5 # Устанавливаем желаемый размер шрифта
+                font.size = Pt(font_size)
+
             font.spacing = Pt(-0.5)  # Устанавливаем пробелы между словами
             font.kerning = True  # Включаем уменьшение расстояния между буквами
 
