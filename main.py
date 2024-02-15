@@ -39,7 +39,7 @@ def process_pdf(pdf_path, keywords, word_path):
                 # Поиск ключевых слов
                 for keyword in keywords:
                     if keyword in text:
-                        print(f"Ключевое слово '{keyword}' найдено")
+                        print(f"Ключевое слово '{keyword}' найдено с описание ")
                         found_keywords.append(keyword)
                 if not found_date:  # Проверяем, была ли найдена дата ранее
                     date = find_dates(text)
@@ -110,11 +110,18 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             key_text = key_description['description']
             if found_date:
                 key_text += f", от {found_date}"
-            run = cell.add_paragraph().add_run(key_text)
+                
+            cell_paragraphs = cell.paragraphs
+            if not cell_paragraphs:  # Если в ячейке нет абзацев, создаем новый
+                new_paragraph = cell.add_paragraph()
+            else:
+                new_paragraph = cell_paragraphs[-1]  # Или берем последний абзац, если он уже существует
+
             # Добавляем текст с форматированием
-            key_format = key_description['format']
-            
+            run = new_paragraph.add_run(key_text)
+
             # Применяем форматирование к тексту
+            key_format = key_description['format']
             if key_format['bold'] is not None:
                 run.bold = key_format['bold']
             if key_format['italic'] is not None:
@@ -150,9 +157,6 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             if key_format['imprint'] is not None:
                 run.font.imprint = key_format['imprint']
 
-            # Adjust paragraph alignment to match existing text
-            cell.paragraphs[-1].alignment = cell.paragraphs[0].alignment
-
     # Добавляем диапазон страниц в столбец "Номера листов"
     if start_page == end_page:
         pages_range = f"{start_page}"" "
@@ -175,8 +179,6 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         incoming_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
 
     doc.save(word_path)
-
-
 
 
 
@@ -268,7 +270,7 @@ def read_keys(keys_path):
                 cell_format['imprint'] = run.font.imprint
         
         keys[key] = {'description': key_description, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
-        print(f"Добавлен Ключ: '{key}' С описанием: '{key_description}' и форматированием: {cell_format}")
+        print(f"Добавлен Ключ: '{key}'")
     return keys
 
 
