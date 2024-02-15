@@ -4,6 +4,7 @@ from docx import Document
 import re
 import torch
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Pt
 
 def process_pdf(pdf_path, keywords, word_path):
     reader = easyocr.Reader(['en', 'ru'], gpu=True)
@@ -122,6 +123,16 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             
             # Добавляем ключ в список уже добавленных
             added_keywords.append(found_keyword)
+
+            run = cell.paragraphs[0].runs[0]
+            font = run.font
+            font_size = 9  # Устанавливаем желаемый размер шрифта
+            font.size = Pt(font_size)
+            font.spacing = Pt(-0.5)  # Устанавливаем пробелы между словами
+            font.kerning = True  # Включаем уменьшение расстояния между буквами
+
+            # Сжатие текста в ячейке
+            cell.paragraphs[0].paragraph_format.keep_together = True
     else:
         cell.text += ""  # Добавляем пустую строку, если ключевые слова не найдены
 
