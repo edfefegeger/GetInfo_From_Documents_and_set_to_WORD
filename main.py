@@ -69,13 +69,6 @@ def process_pdf(pdf_path, keywords, word_path):
 def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page):
     doc = Document(word_path)
     table = doc.tables[0]
-
-    # Находим индекс столбца "№ з/п"
-    for cell in table.rows[0].cells:
-        if cell.text.strip() == "№ з/п":
-            num_index = cell._element.getparent().index(cell._element) - 2
-            break  
-
     # Находим индекс столбца "Наименование документа"
     for cell in table.rows[0].cells:
         if cell.text.strip() == "Наименование документа":
