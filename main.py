@@ -81,6 +81,10 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         if cell.text.strip() == "Номера листов":
             list_index = cell._element.getparent().index(cell._element)
             break   
+    for cell in table.rows[0].cells:
+        if cell.text.strip() == "исходящие":
+            incoming_index = cell._element.getparent().index(cell._element)
+            break  
 
     # Добавляем новую строку в таблицу
     new_row_index = len(table.rows)
@@ -149,9 +153,13 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         for run in paragraph.runs:
             run.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
+    # Находим номер, удовлетворяющий заданным условиям
+    first_matching_number = find_first_matching_number(word_path)
+    if first_matching_number:
+        incoming_cell = table.cell(new_row_index, incoming_index)
+        incoming_cell.text = first_matching_number
+
     doc.save(word_path)
-
-
 
 
 def process_image(image_path, keywords, word_path):
@@ -183,6 +191,20 @@ def process_image(image_path, keywords, word_path):
     update_word_table(word_path, keywords, found_keywords, found_date)
 
     return found_keywords, found_date
+
+
+
+def find_first_matching_number(word_path):
+    doc = Document(word_path)
+    for paragraph in doc.paragraphs:
+        text = paragraph.text
+        match = re.search(r'№\d{1,5}дск', text)  # Регулярное выражение для поиска номера
+        if match:
+            return match.group()
+            print("Номер найден после №:", match.group())
+    return None
+
+
 
 def find_dates(text):
     # Шаблон для поиска даты в формате DD.MM.YYYY
