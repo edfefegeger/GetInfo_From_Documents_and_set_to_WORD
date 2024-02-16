@@ -276,11 +276,13 @@ def read_keys(keys_path):
     if key:
         keys[key] = {'description': key_description, 'format': cell_format}
     
-    # Выводим все ключи в консоль
-    for key in keys:
+    # Выводим все ключи и их описания в консоль
+    for key, value in keys.items():
         print(f"Ключ: '{key}'")
+        print(f"Описание: '{value['description']}'")
     
     return keys
+
 
 
 
