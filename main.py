@@ -64,75 +64,61 @@ def process_pdf(pdf_path, keywords, word_path):
         # Записываем информацию в файл Word после окончания обработки документа
 
     return found_keywords, found_date
-
 def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page):
     doc = Document(word_path)
     table = doc.tables[0]
-    # Находим индекс столбца "Наименование документа"
+    # Находим индекс столбцов
+    column_indices = {}
     for cell in table.rows[0].cells:
         if cell.text.strip() == "Наименование документа":
-            column_index = cell._element.getparent().index(cell._element)
-            break
-    for cell in table.rows[0].cells:
-        if cell.text.strip() == "Номера листов":
-            list_index = cell._element.getparent().index(cell._element)
-            break   
-    for cell in table.rows[0].cells:
-        if cell.text.strip() == "исходящие":
-            incoming_index = cell._element.getparent().index(cell._element)
-            break 
-    for cell in table.rows[0].cells:
-        if cell.text.strip() == "№ з/п":
-            num_index = cell._element.getparent().index(cell._element) - 2
-            break 
+            column_indices['name'] = cell._element.getparent().index(cell._element)
+        elif cell.text.strip() == "Номера листов":
+            column_indices['pages'] = cell._element.getparent().index(cell._element)
+        elif cell.text.strip() == "исходящие":
+            column_indices['outgoing'] = cell._element.getparent().index(cell._element)
+        elif cell.text.strip() == "№ з/п":
+            column_indices['number'] = cell._element.getparent().index(cell._element) - 2
 
-    # Добавляем новую строку в таблицу
-    new_row_index = len(table.rows)
-    new_row = table.add_row()
-
-    # Если найдены ключевые слова, добавляем их и дату в таблицу
-    cell = table.cell(new_row_index, column_index)
-    if found_keywords:
-        for found_keyword in found_keywords:
-            key_description = keywords.get(found_keyword)
-            if key_description is None:
-                print(f"Описание для ключа '{found_keyword}' не найдено.")
-                continue
-            key_text = key_description['description']
-            if found_date:
-                key_text += f", от {found_date}"
-            # Разделяем описание ключа на несколько ячеек, если необходимо
-            description_cells = key_text.split('\n')
-            for i, desc in enumerate(description_cells):
-                # Добавляем новую строку, если это не первая ячейка
-                if i > 0:
-                    new_row = table.add_row()
-                    new_row_index = len(table.rows) - 1
-                    cell = table.cell(new_row_index, column_index)
+    # Добавляем новую строку в таблицу для каждого найденного ключа
+    for found_keyword in found_keywords:
+        key_description = keywords.get(found_keyword)
+        if key_description is None:
+            print(f"Описание для ключа '{found_keyword}' не найдено.")
+            continue
+        key_text = key_description['description']
+        if found_date:
+            key_text += f", от {found_date}"
+        # Разделяем описание ключа на несколько строк, если необходимо
+        description_cells = key_text.split('\n')
+        max_cells = max(len(description_cells), 1)  # Максимальное количество ячеек, которое нужно добавить
+        for i in range(max_cells):
+            new_row_index = len(table.rows)
+            new_row = table.add_row()
+            # Записываем описание ключа в соответствующую ячейку
+            if i < len(description_cells):
+                cell = table.cell(new_row_index, column_indices['name'])
+                cell.text = description_cells[i]
+            # Добавляем диапазон страниц в ячейку "Номера листов"
+            if i == 0:
+                if start_page == end_page:
+                    pages_range = f"{start_page}"
                 else:
-                    cell = table.cell(new_row_index, column_index)
-                cell.text = desc
+                    pages_range = f"{start_page}-{end_page}"
+                list_cell = table.cell(new_row_index, column_indices['pages'])
+                list_cell.text = pages_range
+                list_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+            # Добавляем номер заказа в соответствующую ячейку
+            list_num = table.cell(new_row_index, column_indices['number'] + 1)
+            list_num.text = str(new_row_index - 1)
+            list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
 
-    # Добавляем диапазон страниц в столбец "Номера листов"
-    if start_page == end_page:
-        pages_range = f"{start_page}"" "
-    else:
-        pages_range = f"{start_page}-{end_page}"
-
-    list_cell = table.cell(new_row_index, list_index)
-    list_cell.text = pages_range
-    list_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
-
-    # Добавляем номер заказа в соответствующую ячейку
-    list_num = table.cell(new_row_index, num_index + 1)
-    list_num.text = str(new_row_index - 1)
-    list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
-    
-    first_matching_number = find_first_matching_number(word_path)
-    if first_matching_number:
-        incoming_cell = table.cell(new_row_index, incoming_index)
-        incoming_cell.text = first_matching_number
-        incoming_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+            # Добавляем исходящий номер в соответствующую ячейку, если он есть
+            if i == 0:
+                first_matching_number = find_first_matching_number(word_path)
+                if first_matching_number:
+                    incoming_cell = table.cell(new_row_index, column_indices['outgoing'])
+                    incoming_cell.text = first_matching_number
+                    incoming_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
 
     doc.save(word_path)
 
