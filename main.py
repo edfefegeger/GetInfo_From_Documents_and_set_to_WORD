@@ -2,6 +2,7 @@ import fitz
 import easyocr
 from docx import Document
 import re
+import torch
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt
 
@@ -38,7 +39,7 @@ def process_pdf(pdf_path, keywords, word_path):
                 # Поиск ключевых слов
                 for keyword in keywords:
                     if keyword in text:
-                        print(f"Ключевое слово '{keyword}' ")
+                        print(f"Ключевое слово '{keyword}' найдено с описание ")
                         found_keywords.append(keyword)
                 if not found_date:  # Проверяем, была ли найдена дата ранее
                     date = find_dates(text)
@@ -64,92 +65,113 @@ def process_pdf(pdf_path, keywords, word_path):
         # Записываем информацию в файл Word после окончания обработки документа
 
     return found_keywords, found_date
+
 def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page):
     doc = Document(word_path)
     table = doc.tables[0]
-    # Находим индекс столбцов
-    column_indices = {}
+    # Находим индекс столбца "Наименование документа"
     for cell in table.rows[0].cells:
         if cell.text.strip() == "Наименование документа":
-            column_indices['name'] = cell._element.getparent().index(cell._element)
-        elif cell.text.strip() == "Номера листов":
-            column_indices['pages'] = cell._element.getparent().index(cell._element)
-        elif cell.text.strip() == "исходящие":
-            column_indices['outgoing'] = cell._element.getparent().index(cell._element)
-        elif cell.text.strip() == "№ з/п":
-            column_indices['number'] = cell._element.getparent().index(cell._element) - 2
+            column_index = cell._element.getparent().index(cell._element)
+            break
+    for cell in table.rows[0].cells:
+        if cell.text.strip() == "Номера листов":
+            list_index = cell._element.getparent().index(cell._element)
+            break   
+    for cell in table.rows[0].cells:
+        if cell.text.strip() == "исходящие":
+            incoming_index = cell._element.getparent().index(cell._element)
+            break 
+    for cell in table.rows[0].cells:
+        if cell.text.strip() == "№ з/п":
+            num_index = cell._element.getparent().index(cell._element) - 2
+            break 
 
-    # Добавляем новую строку в таблицу для каждого найденного ключа
-    for found_keyword in found_keywords:
-        key_description = keywords.get(found_keyword)
-        if key_description is None:
-            print(f"Описание для ключа '{found_keyword}' не найдено.")
-            continue
-        key_text = key_description['description']
-        if found_date:
-            key_text += f", от {found_date}"
-        # Разделяем описание ключа на несколько строк, если необходимо
-        description_cells = key_text.split('\n')
-        max_cells = max(len(description_cells), 1)  # Максимальное количество ячеек, которое нужно добавить
-        for i in range(max_cells):
-            new_row_index = len(table.rows)
-            new_row = table.add_row()
-            # Записываем описание ключа в соответствующую ячейку
-            if i < len(description_cells):
-                cell = table.cell(new_row_index, column_indices['name'])
-                cell.text = description_cells[i]
-                # Применяем форматирование из словаря keywords к ячейке
-                apply_format(cell, key_description['format'])
-            # Добавляем диапазон страниц в ячейку "Номера листов"
-            if i == 0:
-                if start_page == end_page:
-                    pages_range = f"{start_page}"
-                else:
-                    pages_range = f"{start_page}-{end_page}"
-                list_cell = table.cell(new_row_index, column_indices['pages'])
-                list_cell.text = pages_range
-                list_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
-            # Добавляем номер заказа в соответствующую ячейку
-            list_num = table.cell(new_row_index, column_indices['number'] + 1)
-            list_num.text = str(new_row_index - 1)
-            list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+    # Добавляем новую строку в таблицу
+    new_row_index = len(table.rows)
+    new_row = table.add_row()
+    added_keywords = []
+    # Если найдены ключевые слова, добавляем их и дату в таблицу
+    cell = table.cell(new_row_index, column_index)
+    if found_keywords:
+        for found_keyword in found_keywords:
+            key_description = keywords.get(found_keyword)
+            
+            if key_description is None:
+                print(f"Описание для ключа '{found_keyword}' не найдено.")
+                continue
+            key_text = key_description['description']
+            if found_date:
+                key_text += f", от {found_date}"
+                
+            cell_paragraphs = cell.paragraphs
+            if not cell_paragraphs:  # Если в ячейке нет абзацев, создаем новый
+                new_paragraph = cell.add_paragraph()
+            else:
+                new_paragraph = cell_paragraphs[-1]  # Или берем последний абзац, если он уже существует
 
-            # Добавляем исходящий номер в соответствующую ячейку, если он есть
-            if i == 0:
-                first_matching_number = find_first_matching_number(word_path)
-                if first_matching_number:
-                    incoming_cell = table.cell(new_row_index, column_indices['outgoing'])
-                    incoming_cell.text = first_matching_number
-                    incoming_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+            # Добавляем текст с форматированием
+            run = new_paragraph.add_run(key_text)
+
+            # Применяем форматирование к тексту
+            key_format = key_description['format']
+            if key_format['bold'] is not None:
+                run.bold = key_format['bold']
+            if key_format['italic'] is not None:
+                run.italic = key_format['italic']
+            if key_format['underline'] is not None:
+                run.underline = key_format['underline']
+            if key_format['font_color'] is not None:
+                run.font.color.rgb = key_format['font_color']
+            if key_format['font_size'] is not None:
+                run.font.size = key_format['font_size']
+            if key_format['font_name'] is not None:
+                run.font.name = key_format['font_name']
+            if key_format['highlight_color'] is not None:
+                run.font.highlight_color = key_format['highlight_color']
+            if key_format['superscript'] is not None:
+                run.font.superscript = key_format['superscript']
+            if key_format['subscript'] is not None:
+                run.font.subscript = key_format['subscript']
+            if key_format['strike'] is not None:
+                run.font.strike = key_format['strike']
+            if key_format['double_strike'] is not None:
+                run.font.double_strike = key_format['double_strike']
+            if key_format['all_caps'] is not None:
+                run.font.all_caps = key_format['all_caps']
+            if key_format['small_caps'] is not None:
+                run.font.small_caps = key_format['small_caps']
+            if key_format['shadow'] is not None:
+                run.font.shadow = key_format['shadow']
+            if key_format['outline'] is not None:
+                run.font.outline = key_format['outline']
+            if key_format['emboss'] is not None:
+                run.font.emboss = key_format['emboss']
+            if key_format['imprint'] is not None:
+                run.font.imprint = key_format['imprint']
+
+    # Добавляем диапазон страниц в столбец "Номера листов"
+    if start_page == end_page:
+        pages_range = f"{start_page}"" "
+    else:
+        pages_range = f"{start_page}-{end_page}"
+
+    list_cell = table.cell(new_row_index, list_index)
+    list_cell.text = pages_range
+    list_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+
+    # Добавляем номер заказа в соответствующую ячейку
+    list_num = table.cell(new_row_index, num_index + 1)
+    list_num.text = str(new_row_index - 1)
+    list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+    
+    first_matching_number = find_first_matching_number(word_path)
+    if first_matching_number:
+        incoming_cell = table.cell(new_row_index, incoming_index)
+        incoming_cell.text = first_matching_number
+        incoming_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
 
     doc.save(word_path)
-
-def apply_format(cell, format_dict):
-    """
-    Apply formatting from format_dict to the given cell.
-    """
-    run = cell.paragraphs[0].runs[0]
-    font = run.font
-    # Apply formatting properties from format_dict
-    font.bold = format_dict.get('bold', False)
-    font.italic = format_dict.get('italic', False)
-    font.underline = format_dict.get('underline', None)
-    font.color.rgb = format_dict.get('font_color', None)
-    font.size = format_dict.get('font_size', None)
-    font.name = format_dict.get('font_name', None)
-    font.highlight_color = format_dict.get('highlight_color', None)
-    font.superscript = format_dict.get('superscript', None)
-    font.subscript = format_dict.get('subscript', None)
-    font.strike = format_dict.get('strike', None)
-    font.double_strike = format_dict.get('double_strike', None)
-    font.all_caps = format_dict.get('all_caps', None)
-    font.small_caps = format_dict.get('small_caps', None)
-    font.shadow = format_dict.get('shadow', None)
-    font.outline = format_dict.get('outline', None)
-    font.emboss = format_dict.get('emboss', None)
-    font.imprint = format_dict.get('imprint', None)
-
-
 
 
 
@@ -209,29 +231,24 @@ def find_dates(text):
         return match.group()
     else:
         return None
-    
+
 def read_keys(keys_path):
     keys = {}
     doc = Document(keys_path)
-    table = doc.tables[0]  # Предполагаем, что таблица находится на первой странице документа 
+    table = doc.tables[0]  # Предполагаем, что таблица находится на первой странице документа
     key = None  # Переменная для хранения текущего ключа
-    key_description = None  # Переменная для хранения описания текущего ключа 
+    description = None  # Переменная для хранения описания текущего ключа
+    cell_format = None  # Переменная для хранения форматирования текущего ключа
+    
     for row in table.rows[1:]:  # Пропускаем первую строку, так как это заголовок
-        cell_1_text = row.cells[0].text.strip()  # Берем текст из первой ячейки в строке (столбец "Значение ключа")
-        cell_2_text = row.cells[1].text.strip()  # Берем текст из второй ячейки в строке (столбец "Описание ключа") 
-        # Если первая ячейка не пустая, это новый ключ
-        if cell_1_text:
-            if key:  # Если уже существует текущий ключ, сохраняем его
-                # Добавляем информацию о форматировании ячейки в словарь keys
-                keys[key] = {'description': key_description, 'format': cell_format} 
-            # Инициализируем новый ключ
-            key = cell_1_text
-            key_description = cell_2_text
-            cell_format = {}  # Инициализируем форматирование для нового ключа 
-        else:  # Если первая ячейка пустая, это продолжение значения ключа
-            # Добавляем описание в предыдущий ключ
-            key_description += "\n" + cell_2_text  # Продолжаем описание на новой строке 
-            # Обновляем форматирование для текущего ключа
+        cell_0_text = row.cells[0].text.strip()
+        if cell_0_text:  # Если ячейка не пустая
+            if key:  # Если есть текущий ключ, сохраняем его в словарь
+                keys[key] = {'description': description, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
+                print(f"Добавлен Ключ: '{key}' описание: {description}")
+            key = cell_0_text  # Обновляем текущий ключ
+            description = row.cells[1].text.strip()  # Берем текст из второй ячейки в строке (столбец "Описание ключа")
+            cell_format = {}  # Сбрасываем форматирование для нового ключа
             for paragraph in row.cells[1].paragraphs:
                 for run in paragraph.runs:
                     cell_format['bold'] = run.bold
@@ -250,23 +267,22 @@ def read_keys(keys_path):
                     cell_format['shadow'] = run.font.shadow
                     cell_format['outline'] = run.font.outline
                     cell_format['emboss'] = run.font.emboss
-                    cell_format['imprint'] = run.font.imprint 
-    # Добавляем последний ключ в словарь после завершения цикла
+                    cell_format['imprint'] = run.font.imprint
+        else:
+            # Если ячейка пустая, это продолжение описания ключа
+            description += "\n" + row.cells[1].text.strip()  # Добавляем новую строку к текущему описанию
+    
+    # Сохраняем информацию о последнем ключе
     if key:
-        keys[key] = {'description': key_description, 'format': cell_format}
-    
-    # Выводим все ключи и их описания в консоль
-    for key, value in keys.items():
-        print(f"Ключ: '{key}'")
-        print(f"Описание: '{value['description']}'")
-    
+        keys[key] = {'description': description, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
+        print(f"Добавлен Ключ: '{key}'")
+
     return keys
 
 
 
-
 if __name__ == "__main__":
-    file_path = input("Введите путь к файлу для обработки: ")
+    file_path = input("Введите путь к файлу (PDF, JPEG): ")
     word_path = "result.docx"
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
