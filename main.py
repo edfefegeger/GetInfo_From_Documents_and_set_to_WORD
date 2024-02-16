@@ -98,6 +98,8 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             if i < len(description_cells):
                 cell = table.cell(new_row_index, column_indices['name'])
                 cell.text = description_cells[i]
+                # Применяем форматирование из словаря keywords к ячейке
+                apply_format(cell, key_description['format'])
             # Добавляем диапазон страниц в ячейку "Номера листов"
             if i == 0:
                 if start_page == end_page:
@@ -121,6 +123,32 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
                     incoming_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
 
     doc.save(word_path)
+
+def apply_format(cell, format_dict):
+    """
+    Apply formatting from format_dict to the given cell.
+    """
+    run = cell.paragraphs[0].runs[0]
+    font = run.font
+    # Apply formatting properties from format_dict
+    font.bold = format_dict.get('bold', False)
+    font.italic = format_dict.get('italic', False)
+    font.underline = format_dict.get('underline', None)
+    font.color.rgb = format_dict.get('font_color', None)
+    font.size = format_dict.get('font_size', None)
+    font.name = format_dict.get('font_name', None)
+    font.highlight_color = format_dict.get('highlight_color', None)
+    font.superscript = format_dict.get('superscript', None)
+    font.subscript = format_dict.get('subscript', None)
+    font.strike = format_dict.get('strike', None)
+    font.double_strike = format_dict.get('double_strike', None)
+    font.all_caps = format_dict.get('all_caps', None)
+    font.small_caps = format_dict.get('small_caps', None)
+    font.shadow = format_dict.get('shadow', None)
+    font.outline = format_dict.get('outline', None)
+    font.emboss = format_dict.get('emboss', None)
+    font.imprint = format_dict.get('imprint', None)
+
 
 
 
