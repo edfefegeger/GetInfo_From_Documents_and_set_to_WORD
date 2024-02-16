@@ -2,7 +2,6 @@ import fitz
 import easyocr
 from docx import Document
 import re
-import torch
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt
 
@@ -39,7 +38,7 @@ def process_pdf(pdf_path, keywords, word_path):
                 # Поиск ключевых слов
                 for keyword in keywords:
                     if keyword in text:
-                        print(f"Ключевое слово '{keyword}' найдено с описание ")
+                        print(f"Ключевое слово '{keyword}' ")
                         found_keywords.append(keyword)
                 if not found_date:  # Проверяем, была ли найдена дата ранее
                     date = find_dates(text)
@@ -231,44 +230,62 @@ def find_dates(text):
         return match.group()
     else:
         return None
-
+    
 def read_keys(keys_path):
     keys = {}
     doc = Document(keys_path)
-    table = doc.tables[0]  # Предполагаем, что таблица находится на первой странице документа
+    table = doc.tables[0]  # Предполагаем, что таблица находится на первой странице документа 
+    key = None  # Переменная для хранения текущего ключа
+    key_description = None  # Переменная для хранения описания текущего ключа 
     for row in table.rows[1:]:  # Пропускаем первую строку, так как это заголовок
-        key = row.cells[0].text.strip()  # Берем текст из второй ячейки в строке (столбец "Значение ключа")
-        key_description = row.cells[1].text.strip()  # Берем текст из третьей ячейки в строке (столбец "Описание ключа")
-        
-        # Добавляем информацию о форматировании ячейки в словарь keys
-        cell_format = {}
-        for paragraph in row.cells[1].paragraphs:
-            for run in paragraph.runs:
-                cell_format['bold'] = run.bold
-                cell_format['italic'] = run.italic
-                cell_format['underline'] = run.underline
-                cell_format['font_color'] = run.font.color.rgb
-                cell_format['font_size'] = run.font.size
-                cell_format['font_name'] = run.font.name
-                cell_format['highlight_color'] = run.font.highlight_color
-                cell_format['superscript'] = run.font.superscript
-                cell_format['subscript'] = run.font.subscript
-                cell_format['strike'] = run.font.strike
-                cell_format['double_strike'] = run.font.double_strike
-                cell_format['all_caps'] = run.font.all_caps
-                cell_format['small_caps'] = run.font.small_caps
-                cell_format['shadow'] = run.font.shadow
-                cell_format['outline'] = run.font.outline
-                cell_format['emboss'] = run.font.emboss
-                cell_format['imprint'] = run.font.imprint
-        
-        keys[key] = {'description': key_description, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
-        print(f"Добавлен Ключ: '{key}'")
+        cell_1_text = row.cells[0].text.strip()  # Берем текст из первой ячейки в строке (столбец "Значение ключа")
+        cell_2_text = row.cells[1].text.strip()  # Берем текст из второй ячейки в строке (столбец "Описание ключа") 
+        # Если первая ячейка не пустая, это новый ключ
+        if cell_1_text:
+            if key:  # Если уже существует текущий ключ, сохраняем его
+                # Добавляем информацию о форматировании ячейки в словарь keys
+                keys[key] = {'description': key_description, 'format': cell_format} 
+            # Инициализируем новый ключ
+            key = cell_1_text
+            key_description = cell_2_text
+            cell_format = {}  # Инициализируем форматирование для нового ключа 
+        else:  # Если первая ячейка пустая, это продолжение значения ключа
+            # Добавляем описание в предыдущий ключ
+            key_description += "\n" + cell_2_text  # Продолжаем описание на новой строке 
+            # Обновляем форматирование для текущего ключа
+            for paragraph in row.cells[1].paragraphs:
+                for run in paragraph.runs:
+                    cell_format['bold'] = run.bold
+                    cell_format['italic'] = run.italic
+                    cell_format['underline'] = run.underline
+                    cell_format['font_color'] = run.font.color.rgb
+                    cell_format['font_size'] = run.font.size
+                    cell_format['font_name'] = run.font.name
+                    cell_format['highlight_color'] = run.font.highlight_color
+                    cell_format['superscript'] = run.font.superscript
+                    cell_format['subscript'] = run.font.subscript
+                    cell_format['strike'] = run.font.strike
+                    cell_format['double_strike'] = run.font.double_strike
+                    cell_format['all_caps'] = run.font.all_caps
+                    cell_format['small_caps'] = run.font.small_caps
+                    cell_format['shadow'] = run.font.shadow
+                    cell_format['outline'] = run.font.outline
+                    cell_format['emboss'] = run.font.emboss
+                    cell_format['imprint'] = run.font.imprint 
+    # Добавляем последний ключ в словарь после завершения цикла
+    if key:
+        keys[key] = {'description': key_description, 'format': cell_format}
+    
+    # Выводим все ключи в консоль
+    for key in keys:
+        print(f"Ключ: '{key}'")
+    
     return keys
 
 
+
 if __name__ == "__main__":
-    file_path = input("Введите путь к файлу (PDF, JPEG): ")
+    file_path = input("Введите путь к файлу для обработки: ")
     word_path = "result.docx"
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
