@@ -105,14 +105,50 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             key_text = key_description['description']
             key_text2 = key_description['description2'] # Получаем description2, если он есть, или пустую строку
 
-            print(key_text2)
             if key_text2 != "":
                 if found_date:
                     key_text2 += f", от {found_date}"
                 new_row = table.add_row()
                 
                 column_index = new_row.cells[column_index]  # Замените номер_столбца_для_Наименование_документа на соответствующий индекс столбца
-                column_index.text = key_text2  # Обновляем текст ячейки с key_text2
+                run2 = column_index.paragraphs[0].add_run(key_text2)
+            # Применяем форматирование к тексту
+                key_format2 = key_description['format']
+                # column_index.text = key_text2  # Обновляем текст ячейки с key_text2
+                if key_format2['bold'] is not None:
+                    run2.bold = key_format2['bold']
+                if key_format2['italic'] is not None:
+                    run2.italic = key_format2['italic']
+                if key_format2['underline'] is not None:
+                    run2.underline = key_format2['underline']
+                if key_format2['font_color'] is not None:
+                    run2.font.color.rgb = key_format2['font_color']
+                if key_format2['font_size'] is not None:
+                    run2.font.size = key_format2['font_size']
+                if key_format2['font_name'] is not None:
+                    run2.font.name = key_format2['font_name']
+                if key_format2['highlight_color'] is not None:
+                    run2.font.highlight_color = key_format2['highlight_color']
+                if key_format2['superscript'] is not None:
+                    run2.font.superscript = key_format2['superscript']
+                if key_format2['subscript'] is not None:
+                    run2.font.subscript = key_format2['subscript']
+                if key_format2['strike'] is not None:
+                    run2.font.strike = key_format2['strike']
+                if key_format2['double_strike'] is not None:
+                    run2.font.double_strike = key_format2['double_strike']
+                if key_format2['all_caps'] is not None:
+                    run2.font.all_caps = key_format2['all_caps']
+                if key_format2['small_caps'] is not None:
+                    run2.font.small_caps = key_format2['small_caps']
+                if key_format2['shadow'] is not None:
+                    run2.font.shadow = key_format2['shadow']
+                if key_format2['outline'] is not None:
+                    run2.font.outline = key_format2['outline']
+                if key_format2['emboss'] is not None:
+                    run2.font.emboss = key_format2['emboss']
+                if key_format2['imprint'] is not None:
+                    run2.font.imprint = key_format2['imprint']
 
             else:
                 if found_date:
@@ -265,7 +301,7 @@ def read_keys(keys_path):
             # Если есть предыдущий ключ, сохраняем его в словарь
             if key:
                 keys[key] = {'description': description, 'description2': description2, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
-                print(f"Добавлен Ключ: {key}. с описанием: {description}")
+                print(f"Добавлен Ключ: {key}. с описанием: {description} {description2}")
             key = cell_0_text  # Обновляем текущий ключ
             description = row.cells[2].text.strip()  # Берем текст из второй ячейки в строке (столбец "Описание ключа")
             description2 = ''  # Обнуляем description2 для нового ключа
@@ -304,7 +340,7 @@ def read_keys(keys_path):
 
 
 if __name__ == "__main__":
-    file_path = input("Введите путь к файлу (PDF, JPEG): ")
+    file_path = input("Введите путь к файлу (PDF): ")
     word_path = "result.docx"
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
