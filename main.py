@@ -235,19 +235,21 @@ def find_dates(text):
 def read_keys(keys_path):
     keys = {}
     doc = Document(keys_path)
-    table = doc.tables[0]  # Предполагаем, что таблица находится на первой странице документа
-    key = None  # Переменная для хранения текущего ключа
-    description = None  # Переменная для хранения описания текущего ключа
+    key = ''  # Переменная для хранения текущего ключа
+    description = ''  # Переменная для хранения описания текущего ключа
     cell_format = None  # Переменная для хранения форматирования текущего ключа
     
-    for row in table.rows[1:]:  # Пропускаем первую строку, так как это заголовок
-        cell_0_text = row.cells[0].text.strip()
-        if cell_0_text:  # Если ячейка не пустая
-            if key:  # Если есть текущий ключ, сохраняем его в словарь
+    for row in doc.tables[0].rows[1:]:  # Пропускаем первую строку, так как это заголовок
+        cell_0_text = row.cells[1].text.strip()
+        cell_0_number = row.cells[0].text.strip()
+
+        if cell_0_number:  # Если ячейка не пустая, это начало нового ключа
+            # Если есть предыдущий ключ, сохраняем его в словарь
+            if key:
                 keys[key] = {'description': description, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
-                print(f"Добавлен Ключ: '{key}' описание: {description}")
+                print(f"Добавлен Ключ: {key} с описанием {description}")
             key = cell_0_text  # Обновляем текущий ключ
-            description = row.cells[1].text.strip()  # Берем текст из второй ячейки в строке (столбец "Описание ключа")
+            description = row.cells[2].text.strip()  # Берем текст из второй ячейки в строке (столбец "Описание ключа")
             cell_format = {}  # Сбрасываем форматирование для нового ключа
             for paragraph in row.cells[1].paragraphs:
                 for run in paragraph.runs:
@@ -269,15 +271,22 @@ def read_keys(keys_path):
                     cell_format['emboss'] = run.font.emboss
                     cell_format['imprint'] = run.font.imprint
         else:
-            # Если ячейка пустая, это продолжение описания ключа
-            description += "\n" + row.cells[1].text.strip()  # Добавляем новую строку к текущему описанию
+            # Если ячейка пустая, это продолжение описания или ключа
+
+                description += "\n" + row.cells[2].text.strip()  # Добавляем новую строку к текущему описанию
+                key += "\n" + row.cells[1].text.strip()  # Добавляем новую строку к текущему ключу
     
     # Сохраняем информацию о последнем ключе
     if key:
         keys[key] = {'description': description, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
-        print(f"Добавлен Ключ: '{key}'")
+        print(f"Добавлен Ключ: {key} с описанием {description}")
 
     return keys
+
+
+
+
+
 
 
 
