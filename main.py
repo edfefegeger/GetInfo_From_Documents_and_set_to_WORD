@@ -100,55 +100,67 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             if key_description is None:
                 print(f"Описание для ключа '{found_keyword}' не найдено.")
                 continue
-            key_text = key_description['description']
+            key_texts = key_description['description']  # Список строк, содержащих обе части описания
             if found_date:
-                key_text += f", от {found_date}"
-                
+                key_texts = [text + f", от {found_date}" for text in key_texts]  # Добавляем дату ко всем строкам описания
+
             cell_paragraphs = cell.paragraphs
             if not cell_paragraphs:  # Если в ячейке нет абзацев, создаем новый
                 new_paragraph = cell.add_paragraph()
             else:
+                # Проверяем, было ли значение ключа записано в несколько этажей
+                is_multiple_floors = len(cell_paragraphs) > 1
+                # Добавляем пустую строку перед добавлением новой строки
+                
+                for i in range(len(key_texts) - 1):
+                    new_row2 = table.add_row()
+                    new_row2.cells[column_index].text = key_texts[i + 1]  # Добавляем текст во вторую строку
+                    print("Добавлен текст во вторую строку")
+                
                 new_paragraph = cell_paragraphs[-1]  # Или берем последний абзац, если он уже существует
 
-            # Добавляем текст с форматированием
-            run = new_paragraph.add_run(key_text)
+            # Добавляем каждую строку как новый абзац
+            for line in key_texts:
+                new_paragraph.add_run(line)
 
-            # Применяем форматирование к тексту
-            key_format = key_description['format']
-            if key_format['bold'] is not None:
-                run.bold = key_format['bold']
-            if key_format['italic'] is not None:
-                run.italic = key_format['italic']
-            if key_format['underline'] is not None:
-                run.underline = key_format['underline']
-            if key_format['font_color'] is not None:
-                run.font.color.rgb = key_format['font_color']
-            if key_format['font_size'] is not None:
-                run.font.size = key_format['font_size']
-            if key_format['font_name'] is not None:
-                run.font.name = key_format['font_name']
-            if key_format['highlight_color'] is not None:
-                run.font.highlight_color = key_format['highlight_color']
-            if key_format['superscript'] is not None:
-                run.font.superscript = key_format['superscript']
-            if key_format['subscript'] is not None:
-                run.font.subscript = key_format['subscript']
-            if key_format['strike'] is not None:
-                run.font.strike = key_format['strike']
-            if key_format['double_strike'] is not None:
-                run.font.double_strike = key_format['double_strike']
-            if key_format['all_caps'] is not None:
-                run.font.all_caps = key_format['all_caps']
-            if key_format['small_caps'] is not None:
-                run.font.small_caps = key_format['small_caps']
-            if key_format['shadow'] is not None:
-                run.font.shadow = key_format['shadow']
-            if key_format['outline'] is not None:
-                run.font.outline = key_format['outline']
-            if key_format['emboss'] is not None:
-                run.font.emboss = key_format['emboss']
-            if key_format['imprint'] is not None:
-                run.font.imprint = key_format['imprint']
+            # Применяем форматирование к каждой строке
+            for paragraph in cell_paragraphs:
+                for run in paragraph.runs:
+                    key_format = key_description['format']
+                    if key_format['bold'] is not None:
+                        run.bold = key_format['bold']
+                    if key_format['italic'] is not None:
+                        run.italic = key_format['italic']
+                    if key_format['underline'] is not None:
+                        run.underline = key_format['underline']
+                    if key_format['font_color'] is not None:
+                        run.font.color.rgb = key_format['font_color']
+                    if key_format['font_size'] is not None:
+                        run.font.size = key_format['font_size']
+                    if key_format['font_name'] is not None:
+                        run.font.name = key_format['font_name']
+                    if key_format['highlight_color'] is not None:
+                        run.font.highlight_color = key_format['highlight_color']
+                    if key_format['superscript'] is not None:
+                        run.font.superscript = key_format['superscript']
+                    if key_format['subscript'] is not None:
+                        run.font.subscript = key_format['subscript']
+                    if key_format['strike'] is not None:
+                        run.font.strike = key_format['strike']
+                    if key_format['double_strike'] is not None:
+                        run.font.double_strike = key_format['double_strike']
+                    if key_format['all_caps'] is not None:
+                        run.font.all_caps = key_format['all_caps']
+                    if key_format['small_caps'] is not None:
+                        run.font.small_caps = key_format['small_caps']
+                    if key_format['shadow'] is not None:
+                        run.font.shadow = key_format['shadow']
+                    if key_format['outline'] is not None:
+                        run.font.outline = key_format['outline']
+                    if key_format['emboss'] is not None:
+                        run.font.emboss = key_format['emboss']
+                    if key_format['imprint'] is not None:
+                        run.font.imprint = key_format['imprint']
 
     # Добавляем диапазон страниц в столбец "Номера листов"
     if start_page == end_page:
@@ -172,6 +184,7 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         incoming_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
 
     doc.save(word_path)
+
 
 
 
@@ -237,6 +250,7 @@ def read_keys(keys_path):
     doc = Document(keys_path)
     key = ''  # Переменная для хранения текущего ключа
     description = ''  # Переменная для хранения описания текущего ключа
+    description2 = ''  # Переменная для хранения второй половины описания текущего ключа
     cell_format = None  # Переменная для хранения форматирования текущего ключа
     
     for row in doc.tables[0].rows[1:]:  # Пропускаем первую строку, так как это заголовок
@@ -246,10 +260,11 @@ def read_keys(keys_path):
         if cell_0_number:  # Если ячейка не пустая, это начало нового ключа
             # Если есть предыдущий ключ, сохраняем его в словарь
             if key:
-                keys[key] = {'description': description, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
+                keys[key] = {'description': [description, description2], 'format': cell_format}  # Сохраняем информацию о форматировании в keys
                 print(f"Добавлен Ключ: {key} с описанием: {description}")
             key = cell_0_text  # Обновляем текущий ключ
             description = row.cells[2].text.strip()  # Берем текст из второй ячейки в строке (столбец "Описание ключа")
+            description2 = ''  # Сбрасываем вторую половину описания для нового ключа
             cell_format = {}  # Сбрасываем форматирование для нового ключа
             for paragraph in row.cells[1].paragraphs:
                 for run in paragraph.runs:
@@ -271,16 +286,18 @@ def read_keys(keys_path):
                     cell_format['emboss'] = run.font.emboss
                     cell_format['imprint'] = run.font.imprint
         else:
-            # Если ячейка пустая, это продолжение описания или ключа
-                description += " " + row.cells[2].text.strip()  # Добавляем новую строку к текущему описанию
+            # Если ячейка пустая, это вторая половина описания ключа
+                description2 += " " + row.cells[2].text.strip()  # Добавляем новую строку к текущей второй половине описания
                 key += " " + row.cells[1].text.strip()  # Добавляем новую строку к текущему ключу
-    
+
     # Сохраняем информацию о последнем ключе
     if key:
-        keys[key] = {'description': description, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
+        keys[key] = {'description': [description, description2], 'format': cell_format}  # Сохраняем информацию о форматировании в keys
         print(f"Добавлен Ключ: {key} с описанием: {description}")
 
     return keys
+
+
 
 
 if __name__ == "__main__":
