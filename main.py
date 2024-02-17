@@ -6,7 +6,7 @@ import torch
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt
 
-def process_pdf(pdf_path, keywords, word_path):
+def process_pdf(pdf_path, keywords, word_path, is_two):
     reader = easyocr.Reader(['en', 'ru'], gpu=True)
 
     # Поиск ключевых слов и даты
@@ -57,40 +57,36 @@ def process_pdf(pdf_path, keywords, word_path):
                     if "End" in text:  
                         print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
                         end_page = page_num + 1  # Конечная страница текущего документа
-                        update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page)
+                        update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, is_two)
                         found_keywords = []
                         found_date = None
-                        start_page = page_num + 2  # Начальная страница следующего документа      
+                        start_page = page_num + 2  # Начальная страница следующего документа 
+  
 
         # Записываем информацию в файл Word после окончания обработки документа
 
     return found_keywords, found_date
 
-def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page):
+def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, is_two):
     doc = Document(word_path)
     table = doc.tables[0]
-    # Находим индекс столбца "Наименование документа"
+    count = 0
+
+    # Найдем индексы столбцов в таблице
     for cell in table.rows[0].cells:
         if cell.text.strip() == "Наименование документа":
             column_index = cell._element.getparent().index(cell._element)
-            break
-    for cell in table.rows[0].cells:
-        if cell.text.strip() == "Номера листов":
+        elif cell.text.strip() == "Номера листов":
             list_index = cell._element.getparent().index(cell._element)
-            break   
-    for cell in table.rows[0].cells:
-        if cell.text.strip() == "исходящие":
+        elif cell.text.strip() == "исходящие":
             incoming_index = cell._element.getparent().index(cell._element)
-            break 
-    for cell in table.rows[0].cells:
-        if cell.text.strip() == "№ з/п":
+        elif cell.text.strip() == "№ з/п":
             num_index = cell._element.getparent().index(cell._element) - 2
-            break 
 
     # Добавляем новую строку в таблицу
     new_row_index = len(table.rows)
     new_row = table.add_row()
-    added_keywords = []
+
     # Если найдены ключевые слова, добавляем их и дату в таблицу
     cell = table.cell(new_row_index, column_index)
     if found_keywords:
@@ -104,63 +100,20 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             if found_date:
                 key_texts = [text + f", от {found_date}" for text in key_texts]  # Добавляем дату ко всем строкам описания
 
-            cell_paragraphs = cell.paragraphs
-            if not cell_paragraphs:  # Если в ячейке нет абзацев, создаем новый
-                new_paragraph = cell.add_paragraph()
-            else:
-                # Проверяем, было ли значение ключа записано в несколько этажей
-                is_multiple_floors = len(cell_paragraphs) > 1
-                # Добавляем пустую строку перед добавлением новой строки
-                
-                for i in range(len(key_texts) - 1):
-                    new_row2 = table.add_row()
-                    new_row2.cells[column_index].text = key_texts[i + 1]  # Добавляем текст во вторую строку
-                    print("Добавлен текст во вторую строку")
-                
-                new_paragraph = cell_paragraphs[-1]  # Или берем последний абзац, если он уже существует
+            # Добавляем каждую часть описания в новую строку таблицы
+            for text_part in key_texts:
+                if count != 0:
+                    if is_two == True: 
+                        
+                        new_row = table.add_row()
+                    
+                new_row.cells[column_index].text = text_part
+                count += 1
 
-            # Добавляем каждую строку как новый абзац
-            for line in key_texts:
-                new_paragraph.add_run(line)
-
-            # Применяем форматирование к каждой строке
-            for paragraph in cell_paragraphs:
+            # Применяем форматирование к каждой части описания
+            for paragraph in cell.paragraphs:
                 for run in paragraph.runs:
-                    key_format = key_description['format']
-                    if key_format['bold'] is not None:
-                        run.bold = key_format['bold']
-                    if key_format['italic'] is not None:
-                        run.italic = key_format['italic']
-                    if key_format['underline'] is not None:
-                        run.underline = key_format['underline']
-                    if key_format['font_color'] is not None:
-                        run.font.color.rgb = key_format['font_color']
-                    if key_format['font_size'] is not None:
-                        run.font.size = key_format['font_size']
-                    if key_format['font_name'] is not None:
-                        run.font.name = key_format['font_name']
-                    if key_format['highlight_color'] is not None:
-                        run.font.highlight_color = key_format['highlight_color']
-                    if key_format['superscript'] is not None:
-                        run.font.superscript = key_format['superscript']
-                    if key_format['subscript'] is not None:
-                        run.font.subscript = key_format['subscript']
-                    if key_format['strike'] is not None:
-                        run.font.strike = key_format['strike']
-                    if key_format['double_strike'] is not None:
-                        run.font.double_strike = key_format['double_strike']
-                    if key_format['all_caps'] is not None:
-                        run.font.all_caps = key_format['all_caps']
-                    if key_format['small_caps'] is not None:
-                        run.font.small_caps = key_format['small_caps']
-                    if key_format['shadow'] is not None:
-                        run.font.shadow = key_format['shadow']
-                    if key_format['outline'] is not None:
-                        run.font.outline = key_format['outline']
-                    if key_format['emboss'] is not None:
-                        run.font.emboss = key_format['emboss']
-                    if key_format['imprint'] is not None:
-                        run.font.imprint = key_format['imprint']
+                    apply_format(run, key_description['format'])
 
     # Добавляем диапазон страниц в столбец "Номера листов"
     if start_page == end_page:
@@ -177,6 +130,7 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     list_num.text = str(new_row_index - 1)
     list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
     
+    # Если есть информация об исходящих, добавляем ее
     first_matching_number = find_first_matching_number(word_path)
     if first_matching_number:
         incoming_cell = table.cell(new_row_index, incoming_index)
@@ -184,6 +138,44 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         incoming_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
 
     doc.save(word_path)
+
+
+def apply_format(run, format_dict):
+    if format_dict['bold'] is not None:
+        run.bold = format_dict['bold']
+    if format_dict['italic'] is not None:
+        run.italic = format_dict['italic']
+    if format_dict['underline'] is not None:
+        run.underline = format_dict['underline']
+    if format_dict['font_color'] is not None:
+        run.font.color.rgb = format_dict['font_color']
+    if format_dict['font_size'] is not None:
+        run.font.size = format_dict['font_size']
+    if format_dict['font_name'] is not None:
+        run.font.name = format_dict['font_name']
+    if format_dict['highlight_color'] is not None:
+        run.font.highlight_color = format_dict['highlight_color']
+    if format_dict['superscript'] is not None:
+        run.font.superscript = format_dict['superscript']
+    if format_dict['subscript'] is not None:
+        run.font.subscript = format_dict['subscript']
+    if format_dict['strike'] is not None:
+        run.font.strike = format_dict['strike']
+    if format_dict['double_strike'] is not None:
+        run.font.double_strike = format_dict['double_strike']
+    if format_dict['all_caps'] is not None:
+        run.font.all_caps = format_dict['all_caps']
+    if format_dict['small_caps'] is not None:
+        run.font.small_caps = format_dict['small_caps']
+    if format_dict['shadow'] is not None:
+        run.font.shadow = format_dict['shadow']
+    if format_dict['outline'] is not None:
+        run.font.outline = format_dict['outline']
+    if format_dict['emboss'] is not None:
+        run.font.emboss = format_dict['emboss']
+    if format_dict['imprint'] is not None:
+        run.font.imprint = format_dict['imprint']
+
 
 
 
@@ -247,6 +239,7 @@ def find_dates(text):
 
 def read_keys(keys_path):
     keys = {}
+    is_two = False  # Initialize is_two here
     doc = Document(keys_path)
     key = ''  # Переменная для хранения текущего ключа
     description = ''  # Переменная для хранения описания текущего ключа
@@ -287,15 +280,16 @@ def read_keys(keys_path):
                     cell_format['imprint'] = run.font.imprint
         else:
             # Если ячейка пустая, это вторая половина описания ключа
-                description2 += " " + row.cells[2].text.strip()  # Добавляем новую строку к текущей второй половине описания
-                key += " " + row.cells[1].text.strip()  # Добавляем новую строку к текущему ключу
+            is_two = True
+            description2 += " " + row.cells[2].text.strip()  # Добавляем новую строку к текущей второй половине описания
+            key += " " + row.cells[1].text.strip()  # Добавляем новую строку к текущему ключу
 
     # Сохраняем информацию о последнем ключе
     if key:
         keys[key] = {'description': [description, description2], 'format': cell_format}  # Сохраняем информацию о форматировании в keys
         print(f"Добавлен Ключ: {key} с описанием: {description}")
 
-    return keys
+    return keys, is_two
 
 
 
@@ -304,9 +298,9 @@ if __name__ == "__main__":
     file_path = input("Введите путь к файлу (PDF, JPEG): ")
     word_path = "result.docx"
     keys_path = "keys.docx"
-    keywords = read_keys(keys_path)
-    found_keywords, found_date = process_pdf(file_path, keywords, word_path)
+    keywords, is_two = read_keys(keys_path)
+    found_keywords, found_date = process_pdf(file_path, keywords, word_path, is_two)
     try:
-        update_word_table(word_path, keywords, found_keywords, found_date)  # Передаем словарь с описаниями ключей в функцию
+        update_word_table(word_path, keywords, found_keywords, found_date, is_two)  # Передаем словарь с описаниями ключей в функцию
     except Exception as e:
         print("Конец")
