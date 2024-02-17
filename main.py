@@ -107,11 +107,13 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
 
             print(key_text2)
             if key_text2 != "":
-                new_row = table.add_row()
-                column_index = new_row.cells[column_index]  # Замените номер_столбца_для_Наименование_документа на соответствующий индекс столбца
-                column_index.text = key_text2  # Обновляем текст ячейки с key_text2
                 if found_date:
                     key_text2 += f", от {found_date}"
+                new_row = table.add_row()
+                
+                column_index = new_row.cells[column_index]  # Замените номер_столбца_для_Наименование_документа на соответствующий индекс столбца
+                column_index.text = key_text2  # Обновляем текст ячейки с key_text2
+
             else:
                 if found_date:
                     key_text += f", от {found_date}"
@@ -289,8 +291,7 @@ def read_keys(keys_path):
                     cell_format['imprint'] = run.font.imprint
         else:
             # Если ячейка пустая, это продолжение описания или ключа
-                description += " " + row.cells[2].text.strip()  # Добавляем новую строку к текущему описанию
-                description2 += " " + row.cells[2].text.strip()  # Добавляем новую строку к текущему описанию 2
+                description2 += row.cells[2].text.strip()  # Добавляем новую строку к текущему описанию 2
                 key += " " + row.cells[1].text.strip()  # Добавляем новую строку к текущему ключу
     
     # Сохраняем информацию о последнем ключе
