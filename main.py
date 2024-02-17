@@ -247,7 +247,7 @@ def read_keys(keys_path):
             # Если есть предыдущий ключ, сохраняем его в словарь
             if key:
                 keys[key] = {'description': description, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
-                print(f"Добавлен Ключ: {key} с описанием {description}")
+                print(f"Добавлен Ключ: {key} с описанием: {description}")
             key = cell_0_text  # Обновляем текущий ключ
             description = row.cells[2].text.strip()  # Берем текст из второй ячейки в строке (столбец "Описание ключа")
             cell_format = {}  # Сбрасываем форматирование для нового ключа
@@ -272,22 +272,15 @@ def read_keys(keys_path):
                     cell_format['imprint'] = run.font.imprint
         else:
             # Если ячейка пустая, это продолжение описания или ключа
-
-                description += "\n" + row.cells[2].text.strip()  # Добавляем новую строку к текущему описанию
-                key += "\n" + row.cells[1].text.strip()  # Добавляем новую строку к текущему ключу
+                description += " " + row.cells[2].text.strip()  # Добавляем новую строку к текущему описанию
+                key += " " + row.cells[1].text.strip()  # Добавляем новую строку к текущему ключу
     
     # Сохраняем информацию о последнем ключе
     if key:
         keys[key] = {'description': description, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
-        print(f"Добавлен Ключ: {key} с описанием {description}")
+        print(f"Добавлен Ключ: {key} с описанием: {description}")
 
     return keys
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
