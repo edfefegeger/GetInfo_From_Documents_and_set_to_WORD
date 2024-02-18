@@ -70,6 +70,8 @@ def process_pdf(pdf_path, keywords, word_path):
 def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page):
     doc = Document(word_path)
     table = doc.tables[0]
+    is_two_str = False
+    first = False
     # Находим индекс столбца "Наименование документа"
     for cell in table.rows[0].cells:
         if cell.text.strip() == "Наименование документа":
@@ -108,9 +110,11 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             if key_text2 != "":
                 if found_date:
                     key_text2 += f", от {found_date}"
+                is_two_str = True
+
                 new_row = table.add_row()
                 
-                column_index = new_row.cells[column_index]  # Замените номер_столбца_для_Наименование_документа на соответствующий индекс столбца
+                column_index = new_row.cells[column_index] 
                 run2 = column_index.paragraphs[0].add_run(key_text2)
             # Применяем форматирование к тексту
                 key_format2 = key_description['format']
@@ -211,17 +215,26 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     list_cell = table.cell(new_row_index, list_index)
     list_cell.text = pages_range
     list_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
-
-    # Добавляем номер заказа в соответствующую ячейку
-    list_num = table.cell(new_row_index, num_index + 1)
-    list_num.text = str(new_row_index - 1)
-    list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
     
+    if is_two_str == False or first == False:
+        # Добавляем номер заказа в соответствующую ячейку
+        list_num = table.cell(new_row_index, num_index + 1)
+        list_num.text = str(new_row_index - 1)
+        list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+    else:
+        # Пропускаем первую ячейку, если is_two_str или first равны True
+        list_num = table.cell(new_row_index, num_index + 1)
+        list_num.text = str(new_row_index)
+        list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+
+
+
     first_matching_number = find_first_matching_number(word_path)
     if first_matching_number:
         incoming_cell = table.cell(new_row_index, incoming_index)
         incoming_cell.text = first_matching_number
         incoming_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+    first = True
 
     doc.save(word_path)
 
@@ -333,7 +346,7 @@ def read_keys(keys_path):
     # Сохраняем информацию о последнем ключе
     if key:
         keys[key] = {'description': description, 'description2': description2, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
-        print(f"Добавлен Ключ: {key}. с описанием: {description}")
+        print(f"Добавлен Ключ: {key}. с описанием: {description} {description2}")
 
     return keys
 
