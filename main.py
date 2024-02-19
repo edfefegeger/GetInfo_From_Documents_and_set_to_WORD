@@ -10,7 +10,7 @@ from fuzzywuzzy import fuzz
 def clear_word_table(word_path):
     doc = Document(word_path)
     table = doc.tables[0]
-    for row in table.rows[1:]:  # Начинаем с первой строки, так как первая строка - это заголовок
+    for row in table.rows[2:]:  # Начинаем с первой строки, так как первая строка - это заголовок
         table._element.remove(row._element)  # Удаляем строку
     doc.save(word_path)
 
@@ -382,6 +382,7 @@ if __name__ == "__main__":
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
     clear_word_table(word_path)  # Очищаем таблицу перед обработкой нового файла PDF
+    print("Таблица 'Result.docx' очищена")
     found_keywords, found_date = process_pdf(file_path, keywords, word_path)
     try:
         update_word_table(word_path, keywords, found_keywords, found_date)  # Передаем словарь с описаниями ключей в функцию
