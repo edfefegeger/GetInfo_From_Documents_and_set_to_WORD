@@ -87,14 +87,14 @@ def process_pdf(pdf_path, keywords, word_path):
             if len(pdf) == 1:  # Если документ содержит только одну страницу
                 print("Документ содержит только одну страницу. Завершение обработки.")
                 end_page = 1  # Конечная страница текущего документа
-                update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page)
+                update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num)
                 found_keywords = []
                 found_date = None
             else:
                 if "End" in text:  
                     print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
                     end_page = page_num + 1  # Конечная страница текущего документа
-                    update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page)
+                    update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num)
                     found_keywords = []
                     found_date = None
                     start_page = page_num + 2  # Начальная страница следующего документа      
@@ -103,11 +103,12 @@ def process_pdf(pdf_path, keywords, word_path):
     return found_keywords, found_date
 
 
-def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page):
+def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num):
     doc = Document(word_path)
     table = doc.tables[0]
     is_two_str = False
     first = False
+    incoming_index = None 
     # Находим индекс столбца "Наименование документа"
     for cell in table.rows[0].cells:
         if cell.text.strip() == "Наименование документа":
@@ -117,9 +118,9 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         if cell.text.strip() == "Номера листов":
             list_index = cell._element.getparent().index(cell._element)
             break   
-    for cell in table.rows[0].cells:
-        if cell.text.strip() == "исходящие":
-            incoming_index = cell._element.getparent().index(cell._element)
+    for cell in table.rows[1].cells:
+        if cell.text.strip() == "исходящий":
+            incoming_index = cell._element.getparent().index(cell._element) - 1
             break 
     for cell in table.rows[0].cells:
         if cell.text.strip() == "№ з/п":
@@ -254,6 +255,16 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     
     # if is_two_str == False:
         # Добавляем номер заказа в соответствующую ячейку
+    if incoming_index is not None:
+        # Добавляем исходящий номер в соответствующую ячейку
+        incoming_cell = table.cell(new_row_index, incoming_index)
+        if found_outgoing_num is not None:
+            incoming_cell.text = found_outgoing_num
+        incoming_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+    else:
+        print("Столбец 'исходящие' не найден в таблице.")
+
+
     list_num = table.cell(new_row_index, num_index + 1)
     list_num.text = str(new_row_index - 1)
     list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
@@ -263,12 +274,6 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     #     list_num.text = str(new_row_index)
     #     list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
 
-
-    first_matching_number = find_first_matching_number(word_path)
-    if first_matching_number:
-        incoming_cell = table.cell(new_row_index, incoming_index)
-        incoming_cell.text = first_matching_number
-        incoming_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
     first = True
 
     doc.save(word_path)
@@ -315,9 +320,6 @@ def find_first_matching_number(text):
         return match.group()
     else:           
         return None
-
-
-
 
 
 def find_dates(text):
