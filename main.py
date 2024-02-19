@@ -7,6 +7,12 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt
 from fuzzywuzzy import fuzz
 
+def clear_word_table(word_path):
+    doc = Document(word_path)
+    table = doc.tables[0]
+    for row in table.rows[1:]:  # Начинаем с первой строки, так как первая строка - это заголовок
+        table._element.remove(row._element)  # Удаляем строку
+    doc.save(word_path)
 
 def process_pdf(pdf_path, keywords, word_path):
     reader = easyocr.Reader(['en', 'ru', 'uk', 'be'], gpu=True)
@@ -55,7 +61,7 @@ def process_pdf(pdf_path, keywords, word_path):
                 for keyword in keywords:
                     similarity = fuzz.partial_ratio(keyword, text)
                     print(f"Сравнение с ключевым словом '{keyword}' сходится с {similarity}%")
-                    if similarity > 75:  # Устанавливаем порог сходства
+                    if similarity > 72:  # Устанавливаем порог сходства
                         print(f"Ключевое слово '{keyword}' распознано с сходством {similarity}%")
                         found_keywords.append(keyword)
 
@@ -234,7 +240,7 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     list_cell.text = pages_range
     list_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
     
-    if is_two_str == False or first == False:
+    if is_two_str == False:
         # Добавляем номер заказа в соответствующую ячейку
         list_num = table.cell(new_row_index, num_index + 1)
         list_num.text = str(new_row_index - 1)
@@ -375,6 +381,7 @@ if __name__ == "__main__":
     word_path = "result.docx"
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
+    clear_word_table(word_path)  # Очищаем таблицу перед обработкой нового файла PDF
     found_keywords, found_date = process_pdf(file_path, keywords, word_path)
     try:
         update_word_table(word_path, keywords, found_keywords, found_date)  # Передаем словарь с описаниями ключей в функцию
