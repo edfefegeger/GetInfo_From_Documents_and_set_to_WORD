@@ -20,6 +20,7 @@ def process_pdf(pdf_path, keywords, word_path):
     # Поиск ключевых слов и даты
     found_keywords = []
     found_date = None  # Здесь будем хранить найденную дату
+    found_outgoing_num = None
 
     start_page = 1  # Начальная страница текущего документа
 
@@ -45,6 +46,12 @@ def process_pdf(pdf_path, keywords, word_path):
                         print("Дата найдена:", date)
                         found_date = date 
 
+                if not found_outgoing_num:
+                    oucoming_num = find_first_matching_number(text)
+                    if oucoming_num:
+                        print(f"Найден исходящий номер {oucoming_num}")
+                        found_outgoing_num = oucoming_num
+
             # Если на странице есть изображения, ищем текст в них
             images = page.get_images(full=True)
             if images:
@@ -64,6 +71,12 @@ def process_pdf(pdf_path, keywords, word_path):
                     if similarity > 72:  # Устанавливаем порог сходства
                         print(f"Ключевое слово '{keyword}' распознано с сходством {similarity}%")
                         found_keywords.append(keyword)
+
+                if not found_outgoing_num:
+                    oucoming_num = find_first_matching_number(text)
+                    if oucoming_num:
+                        print(f"Найден исходящий номер  {oucoming_num}")
+                        found_outgoing_num = oucoming_num
 
                 if not found_date:  # Проверяем, была ли найдена дата ранее
                     date = find_dates(text)
@@ -88,7 +101,6 @@ def process_pdf(pdf_path, keywords, word_path):
 
     # Записываем информацию в файл Word после окончания обработки документа
     return found_keywords, found_date
-
 
 
 def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page):
@@ -240,17 +252,16 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     list_cell.text = pages_range
     list_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
     
-    if is_two_str == False:
+    # if is_two_str == False:
         # Добавляем номер заказа в соответствующую ячейку
-        list_num = table.cell(new_row_index, num_index + 1)
-        list_num.text = str(new_row_index - 1)
-        list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
-    else:
-        # Пропускаем первую ячейку, если is_two_str или first равны True
-        list_num = table.cell(new_row_index, num_index + 1)
-        list_num.text = str(new_row_index)
-        list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
-
+    list_num = table.cell(new_row_index, num_index + 1)
+    list_num.text = str(new_row_index - 1)
+    list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+    # else:
+    #     # Пропускаем первую ячейку, если is_two_str или first равны True
+    #     list_num = table.cell(new_row_index, num_index + 1)
+    #     list_num.text = str(new_row_index)
+    #     list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
 
 
     first_matching_number = find_first_matching_number(word_path)
@@ -297,16 +308,15 @@ def process_image(image_path, keywords, word_path):
 
 
 
-def find_first_matching_number(word_path):
-    doc = Document(word_path)
-    for paragraph in doc.paragraphs:
-        text = paragraph.text
-        match = re.search(r'№\d{1,5}дск', text)  # Регулярное выражение для поиска номера
-        if match:
-            print("Номер найден после №:", match.group())
-            return match.group()
-            
-    return None
+def find_first_matching_number(text):
+    pattern = r'№\d{1,5}дск'
+    match = re.search(pattern, text)  # Регулярное выражение для поиска номера
+    if match:
+        return match.group()
+    else:           
+        return None
+
+
 
 
 
