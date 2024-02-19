@@ -5,10 +5,11 @@ import re
 import torch
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt
+from fuzzywuzzy import fuzz
+
 
 def process_pdf(pdf_path, keywords, word_path):
     reader = easyocr.Reader(['en', 'ru', 'uk', 'be'], gpu=True)
-
 
     # Поиск ключевых слов и даты
     found_keywords = []
@@ -23,11 +24,24 @@ def process_pdf(pdf_path, keywords, word_path):
 
             print(f"Обрабатывается страница {page_num + 1}...")
 
-            # Если на странице есть текст или изображения, обрабатываем ее
-            images = page.get_images(full=True)
-            if text or images:
+            # Если на странице есть текст, обрабатываем ее
+            if text:
+                # Поиск ключевых слов
+                for keyword in keywords:
+                    if keyword in text:
+                        print(f"Ключевое слово '{keyword}' найдено")
+                        found_keywords.append(keyword)
 
-                # Поиск текста в изображениях
+
+                if not found_date:  # Проверяем, была ли найдена дата ранее
+                    date = find_dates(text)
+                    if date:
+                        print("Дата найдена:", date)
+                        found_date = date 
+
+            # Если на странице есть изображения, ищем текст в них
+            images = page.get_images(full=True)
+            if images:
                 for img_index, img in enumerate(images):
                     xref = img[0]
                     base_image = pdf.extract_image(xref)
@@ -37,35 +51,39 @@ def process_pdf(pdf_path, keywords, word_path):
                         img_text = detection[1]
                         text += " " + img_text  # Добавляем текст изображения к тексту страницы
 
-                # Поиск ключевых слов
+                # Поиск ключевых слов после добавления текста изображения
                 for keyword in keywords:
-                    if keyword in text:
-                        print(f"Ключевое слово '{keyword}' найдено с описание ")
+                    similarity = fuzz.partial_ratio(keyword, text)
+                    print(f"Сравнение с ключевым словом '{keyword}' сходится с {similarity}%")
+                    if similarity > 75:  # Устанавливаем порог сходства
+                        print(f"Ключевое слово '{keyword}' распознано с сходством {similarity}%")
                         found_keywords.append(keyword)
+
                 if not found_date:  # Проверяем, была ли найдена дата ранее
                     date = find_dates(text)
                     if date:
                         print("Дата найдена:", date)
                         found_date = date 
 
-                if len(pdf) == 1:  # Если документ содержит только одну страницу
-                    print("Документ содержит только одну страницу. Завершение обработки.")
-                    end_page = 1  # Конечная страница текущего документа
+            if len(pdf) == 1:  # Если документ содержит только одну страницу
+                print("Документ содержит только одну страницу. Завершение обработки.")
+                end_page = 1  # Конечная страница текущего документа
+                update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page)
+                found_keywords = []
+                found_date = None
+            else:
+                if "End" in text:  
+                    print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
+                    end_page = page_num + 1  # Конечная страница текущего документа
                     update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page)
                     found_keywords = []
                     found_date = None
-                else:
-                    if "End" in text:  
-                        print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
-                        end_page = page_num + 1  # Конечная страница текущего документа
-                        update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page)
-                        found_keywords = []
-                        found_date = None
-                        start_page = page_num + 2  # Начальная страница следующего документа      
+                    start_page = page_num + 2  # Начальная страница следующего документа      
 
-        # Записываем информацию в файл Word после окончания обработки документа
-
+    # Записываем информацию в файл Word после окончания обработки документа
     return found_keywords, found_date
+
+
 
 def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page):
     doc = Document(word_path)
