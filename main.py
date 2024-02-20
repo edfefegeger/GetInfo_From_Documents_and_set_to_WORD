@@ -10,7 +10,7 @@ from fuzzywuzzy import fuzz
 def clear_word_table(word_path):
     doc = Document(word_path)
     table = doc.tables[0]
-    for row in table.rows[2:]:  # Начинаем с первой строки, так как первая строка - это заголовок
+    for row in table.rows[2:]:  
         table._element.remove(row._element)  # Удаляем строку
     doc.save(word_path)
 
@@ -109,6 +109,7 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     is_two_str = False
     first = False
     incoming_index = None 
+    outgoing_index = None  # Добавляем индекс для столбца с исходящим номером
     # Находим индекс столбца "Наименование документа"
     for cell in table.rows[0].cells:
         if cell.text.strip() == "Наименование документа":
@@ -120,7 +121,7 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             break   
     for cell in table.rows[1].cells:
         if cell.text.strip() == "исходящий":
-            incoming_index = cell._element.getparent().index(cell._element) - 1
+            outgoing_index = cell._element.getparent().index(cell._element) - 1
             break 
     for cell in table.rows[0].cells:
         if cell.text.strip() == "№ з/п":
@@ -148,11 +149,11 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
                 if found_date:
                     key_text2 += f", от {found_date}"
                 is_two_str = True
-            
+
                 new_row = table.add_row()
-                            
+
                 column_cell = new_row.cells[column_index]  # Получаем ячейку в нужном столбце
-            
+
                 # Используем column_cell вместо column_index
                 run2 = column_cell.paragraphs[0].add_run(key_text2)
 
@@ -258,28 +259,21 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     
     # if is_two_str == False:
         # Добавляем номер заказа в соответствующую ячейку
-    if incoming_index is not None:
+    if outgoing_index is not None:  # Проверяем, был ли найден столбец с исходящим номером
         # Добавляем исходящий номер в соответствующую ячейку
-        incoming_cell = table.cell(new_row_index, incoming_index)
+        outgoing_cell = table.cell(new_row_index, outgoing_index)
         if found_outgoing_num is not None:
-            incoming_cell.text = found_outgoing_num
-        incoming_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+            outgoing_cell.text = found_outgoing_num
+        outgoing_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
     else:
         print("Столбец 'исходящие' не найден в таблице.")
-
 
     list_num = table.cell(new_row_index, num_index + 1)
     list_num.text = str(new_row_index - 1)
     list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
-    # else:
-    #     # Пропускаем первую ячейку, если is_two_str или first равны True
-    #     list_num = table.cell(new_row_index, num_index + 1)
-    #     list_num.text = str(new_row_index)
-    #     list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
-
-    first = True
 
     doc.save(word_path)
+
 
 
 
@@ -392,15 +386,17 @@ def read_keys(keys_path):
 
 if __name__ == "__main__":
     file_path = input("Введите путь к файлу (PDF): ")
-    threshoud = int(input("Введите пороговое значение для распознавания текста в %: "))
+    threshold = int(input("Введите минимальное пороговое значение для распознавания текста в %: "))
 
     word_path = "result.docx"
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
     clear_word_table(word_path)  # Очищаем таблицу перед обработкой нового файла PDF
     print("Таблица 'Result.docx' очищена")
-    found_keywords, found_date = process_pdf(file_path, keywords, word_path, threshoud)
+    found_keywords, found_date = process_pdf(file_path, keywords, word_path, threshold)
     try:
         update_word_table(word_path, keywords, found_keywords, found_date)  # Передаем словарь с описаниями ключей в функцию
     except Exception as e:
         print("Конец")
+
+    input("Press Enter to exit...")
