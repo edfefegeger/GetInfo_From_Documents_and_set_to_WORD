@@ -14,7 +14,7 @@ def clear_word_table(word_path):
         table._element.remove(row._element)  # Удаляем строку
     doc.save(word_path)
 
-def process_pdf(pdf_path, keywords, word_path):
+def process_pdf(pdf_path, keywords, word_path, threshoud):
     reader = easyocr.Reader(['en', 'ru', 'uk', 'be'], gpu=True)
 
     # Поиск ключевых слов и даты
@@ -68,8 +68,8 @@ def process_pdf(pdf_path, keywords, word_path):
                 for keyword in keywords:
                     similarity = fuzz.partial_ratio(keyword, text)
                     print(f"Сравнение с ключевым словом '{keyword}' сходится с {similarity}%")
-                    if similarity > 72:  # Устанавливаем порог сходства
-                        print(f"Ключевое слово '{keyword}' распознано с сходством {similarity}%")
+                    if similarity > threshoud:  # Устанавливаем порог сходства
+                        print(f"Ключевое слово '{keyword}' добавлено со сходством {similarity}%")
                         found_keywords.append(keyword)
 
                 if not found_outgoing_num:
@@ -148,11 +148,14 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
                 if found_date:
                     key_text2 += f", от {found_date}"
                 is_two_str = True
-
+            
                 new_row = table.add_row()
-                
-                column_index = new_row.cells[column_index] 
-                run2 = column_index.paragraphs[0].add_run(key_text2)
+                            
+                column_cell = new_row.cells[column_index]  # Получаем ячейку в нужном столбце
+            
+                # Используем column_cell вместо column_index
+                run2 = column_cell.paragraphs[0].add_run(key_text2)
+
             # Применяем форматирование к тексту
                 key_format2 = key_description['format']
                 # column_index.text = key_text2  # Обновляем текст ячейки с key_text2
@@ -329,7 +332,6 @@ def find_dates(text):
     # Находим первое совпадение с шаблоном
     match = re.search(date_pattern, text)
     if match:
-        print("Дата найдена:", match.group())
         return match.group()
     else:
         return None
@@ -390,12 +392,14 @@ def read_keys(keys_path):
 
 if __name__ == "__main__":
     file_path = input("Введите путь к файлу (PDF): ")
+    threshoud = int(input("Введите пороговое значение для распознавания текста в %: "))
+
     word_path = "result.docx"
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
     clear_word_table(word_path)  # Очищаем таблицу перед обработкой нового файла PDF
     print("Таблица 'Result.docx' очищена")
-    found_keywords, found_date = process_pdf(file_path, keywords, word_path)
+    found_keywords, found_date = process_pdf(file_path, keywords, word_path, threshoud)
     try:
         update_word_table(word_path, keywords, found_keywords, found_date)  # Передаем словарь с описаниями ключей в функцию
     except Exception as e:
