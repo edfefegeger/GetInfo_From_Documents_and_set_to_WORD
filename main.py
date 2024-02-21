@@ -14,8 +14,9 @@ def clear_word_table(word_path):
         table._element.remove(row._element)  # Удаляем строку
     doc.save(word_path)
 
-def process_pdf(pdf_path, keywords, word_path, threshoud):
-    reader = easyocr.Reader(['en', 'ru', 'uk', 'be'], gpu=True)
+def process_pdf(pdf_path, keywords, word_path, threshoud, languages):
+
+    reader = easyocr.Reader(['en', languages], gpu=True)
 
     # Поиск ключевых слов и даты
     found_keywords = []
@@ -387,13 +388,15 @@ def read_keys(keys_path):
 if __name__ == "__main__":
     file_path = input("Введите путь к файлу (PDF): ")
     threshold = int(input("Введите минимальное пороговое значение для распознавания текста в %: "))
+    languages = input("Введите язык для использования (ru или uk или be) ")
+
 
     word_path = "result.docx"
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
     clear_word_table(word_path)  # Очищаем таблицу перед обработкой нового файла PDF
     print("Таблица 'Result.docx' очищена")
-    found_keywords, found_date = process_pdf(file_path, keywords, word_path, threshold)
+    found_keywords, found_date = process_pdf(file_path, keywords, word_path, threshold, languages)
     try:
         update_word_table(word_path, keywords, found_keywords, found_date)  # Передаем словарь с описаниями ключей в функцию
     except Exception as e:
