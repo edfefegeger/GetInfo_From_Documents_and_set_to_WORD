@@ -40,6 +40,8 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q):
             if text:
                 # Поиск ключевых слов
                 for keyword in keywords:
+                    if keyword in found_keywords:
+                        continue  # Пропускаем ключевое слово, если оно уже было найдено
                     key_words = keyword.split()  # Разбиваем ключевое слово на отдельные слова
                     found_count = sum(word in text for word in key_words)  # Подсчитываем количество найденных слов
                     # Вычисляем процент распознавания для ключа
@@ -83,6 +85,8 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q):
 
                 # Поиск ключевых слов после добавления текста изображения
                 for keyword in keywords:
+                    if keyword in found_keywords:
+                        continue  # Пропускаем ключевое слово, если оно уже было найдено
                     key_words = keyword.split()  # Разбиваем ключевое слово на отдельные слова
                     found_count = sum(word in text for word in key_words)  # Подсчитываем количество найденных слов
                     # Вычисляем процент распознавания для ключа
@@ -163,117 +167,106 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     # Если найдены ключевые слова, добавляем их и дату в таблицу
     cell = table.cell(new_row_index, column_index)
     if found_keywords:
-        for found_keyword in found_keywords:
-            key_description = keywords.get(found_keyword)
+        found_keyword = found_keywords[0]  # Берем только первое найденное ключевое слово
+        key_description = keywords.get(found_keyword)
 
-            if key_description is None:
-                print(f"Описание для ключа '{found_keyword}' не найдено.")
-                continue
-            
-            key_text = key_description['description']
-            key_text2 = key_description['description2'] # Получаем description2, если он есть, или пустую строку
-
-            if key_text2 != "":
-                if found_date:
-                    key_text2 += f", от {found_date}"
-                is_two_str = True
-
-                new_row = table.add_row()
-
-                column_cell = new_row.cells[column_index]  # Получаем ячейку в нужном столбце
-
-                # Используем column_cell вместо column_index
-                run2 = column_cell.paragraphs[0].add_run(key_text2)
-
-            # Применяем форматирование к тексту
-                key_format2 = key_description['format']
-                # column_index.text = key_text2  # Обновляем текст ячейки с key_text2
-                if key_format2['bold'] is not None:
-                    run2.bold = key_format2['bold']
-                if key_format2['italic'] is not None:
-                    run2.italic = key_format2['italic']
-                if key_format2['underline'] is not None:
-                    run2.underline = key_format2['underline']
-                if key_format2['font_color'] is not None:
-                    run2.font.color.rgb = key_format2['font_color']
-                if key_format2['font_size'] is not None:
-                    run2.font.size = key_format2['font_size']
-                if key_format2['font_name'] is not None:
-                    run2.font.name = key_format2['font_name']
-                if key_format2['highlight_color'] is not None:
-                    run2.font.highlight_color = key_format2['highlight_color']
-                if key_format2['superscript'] is not None:
-                    run2.font.superscript = key_format2['superscript']
-                if key_format2['subscript'] is not None:
-                    run2.font.subscript = key_format2['subscript']
-                if key_format2['strike'] is not None:
-                    run2.font.strike = key_format2['strike']
-                if key_format2['double_strike'] is not None:
-                    run2.font.double_strike = key_format2['double_strike']
-                if key_format2['all_caps'] is not None:
-                    run2.font.all_caps = key_format2['all_caps']
-                if key_format2['small_caps'] is not None:
-                    run2.font.small_caps = key_format2['small_caps']
-                if key_format2['shadow'] is not None:
-                    run2.font.shadow = key_format2['shadow']
-                if key_format2['outline'] is not None:
-                    run2.font.outline = key_format2['outline']
-                if key_format2['emboss'] is not None:
-                    run2.font.emboss = key_format2['emboss']
-                if key_format2['imprint'] is not None:
-                    run2.font.imprint = key_format2['imprint']
-
-            else:
-                if found_date:
-                    key_text += f", от {found_date}"
-
-            cell_paragraphs = cell.paragraphs
-
-            if not cell_paragraphs:  # Если в ячейке нет абзацев, создаем новый
-                new_paragraph = cell.add_paragraph()
-            else:
-                new_paragraph = cell_paragraphs[-1]  # Или берем последний абзац, если он уже существует
-
-            # Добавляем текст с форматированием
-            run = new_paragraph.add_run(key_text)
-
-
-            # Применяем форматирование к тексту
-            key_format = key_description['format']
-            if key_format['bold'] is not None:
-                run.bold = key_format['bold']
-            if key_format['italic'] is not None:
-                run.italic = key_format['italic']
-            if key_format['underline'] is not None:
-                run.underline = key_format['underline']
-            if key_format['font_color'] is not None:
-                run.font.color.rgb = key_format['font_color']
-            if key_format['font_size'] is not None:
-                run.font.size = key_format['font_size']
-            if key_format['font_name'] is not None:
-                run.font.name = key_format['font_name']
-            if key_format['highlight_color'] is not None:
-                run.font.highlight_color = key_format['highlight_color']
-            if key_format['superscript'] is not None:
-                run.font.superscript = key_format['superscript']
-            if key_format['subscript'] is not None:
-                run.font.subscript = key_format['subscript']
-            if key_format['strike'] is not None:
-                run.font.strike = key_format['strike']
-            if key_format['double_strike'] is not None:
-                run.font.double_strike = key_format['double_strike']
-            if key_format['all_caps'] is not None:
-                run.font.all_caps = key_format['all_caps']
-            if key_format['small_caps'] is not None:
-                run.font.small_caps = key_format['small_caps']
-            if key_format['shadow'] is not None:
-                run.font.shadow = key_format['shadow']
-            if key_format['outline'] is not None:
-                run.font.outline = key_format['outline']
-            if key_format['emboss'] is not None:
-                run.font.emboss = key_format['emboss']
-            if key_format['imprint'] is not None:
-                run.font.imprint = key_format['imprint']
+        if key_description is None:
+            print(f"Описание для ключа '{found_keyword}' не найдено.")
+            return
+        
+        key_text = key_description['description']
+        key_text2 = key_description['description2'] # Получаем description2, если он есть, или пустую строку
+        if key_text2 != "":
+            if found_date:
+                key_text2 += f", от {found_date}"
+            is_two_str = True
+            new_row = table.add_row()
+            column_cell = new_row.cells[column_index]  # Получаем ячейку в нужном столбце
+            # Используем column_cell вместо column_index
+            run2 = column_cell.paragraphs[0].add_run(key_text2)
+        # Применяем форматирование к тексту
+            key_format2 = key_description['format']
+            # column_index.text = key_text2  # Обновляем текст ячейки с key_text2
+            if key_format2['bold'] is not None:
+                run2.bold = key_format2['bold']
+            if key_format2['italic'] is not None:
+                run2.italic = key_format2['italic']
+            if key_format2['underline'] is not None:
+                run2.underline = key_format2['underline']
+            if key_format2['font_color'] is not None:
+                run2.font.color.rgb = key_format2['font_color']
+            if key_format2['font_size'] is not None:
+                run2.font.size = key_format2['font_size']
+            if key_format2['font_name'] is not None:
+                run2.font.name = key_format2['font_name']
+            if key_format2['highlight_color'] is not None:
+                run2.font.highlight_color = key_format2['highlight_color']
+            if key_format2['superscript'] is not None:
+                run2.font.superscript = key_format2['superscript']
+            if key_format2['subscript'] is not None:
+                run2.font.subscript = key_format2['subscript']
+            if key_format2['strike'] is not None:
+                run2.font.strike = key_format2['strike']
+            if key_format2['double_strike'] is not None:
+                run2.font.double_strike = key_format2['double_strike']
+            if key_format2['all_caps'] is not None:
+                run2.font.all_caps = key_format2['all_caps']
+            if key_format2['small_caps'] is not None:
+                run2.font.small_caps = key_format2['small_caps']
+            if key_format2['shadow'] is not None:
+                run2.font.shadow = key_format2['shadow']
+            if key_format2['outline'] is not None:
+                run2.font.outline = key_format2['outline']
+            if key_format2['emboss'] is not None:
+                run2.font.emboss = key_format2['emboss']
+            if key_format2['imprint'] is not None:
+                run2.font.imprint = key_format2['imprint']
+        else:
+            if found_date:
+                key_text += f", от {found_date}"
+        cell_paragraphs = cell.paragraphs
+        if not cell_paragraphs:  # Если в ячейке нет абзацев, создаем новый
+            new_paragraph = cell.add_paragraph()
+        else:
+            new_paragraph = cell_paragraphs[-1]  # Или берем последний абзац, если он уже существует
+        # Добавляем текст с форматированием
+        run = new_paragraph.add_run(key_text)
+        # Применяем форматирование к тексту
+        key_format = key_description['format']
+        if key_format['bold'] is not None:
+            run.bold = key_format['bold']
+        if key_format['italic'] is not None:
+            run.italic = key_format['italic']
+        if key_format['underline'] is not None:
+            run.underline = key_format['underline']
+        if key_format['font_color'] is not None:
+            run.font.color.rgb = key_format['font_color']
+        if key_format['font_size'] is not None:
+            run.font.size = key_format['font_size']
+        if key_format['font_name'] is not None:
+            run.font.name = key_format['font_name']
+        if key_format['highlight_color'] is not None:
+            run.font.highlight_color = key_format['highlight_color']
+        if key_format['superscript'] is not None:
+            run.font.superscript = key_format['superscript']
+        if key_format['subscript'] is not None:
+            run.font.subscript = key_format['subscript']
+        if key_format['strike'] is not None:
+            run.font.strike = key_format['strike']
+        if key_format['double_strike'] is not None:
+            run.font.double_strike = key_format['double_strike']
+        if key_format['all_caps'] is not None:
+            run.font.all_caps = key_format['all_caps']
+        if key_format['small_caps'] is not None:
+            run.font.small_caps = key_format['small_caps']
+        if key_format['shadow'] is not None:
+            run.font.shadow = key_format['shadow']
+        if key_format['outline'] is not None:
+            run.font.outline = key_format['outline']
+        if key_format['emboss'] is not None:
+            run.font.emboss = key_format['emboss']
+        if key_format['imprint'] is not None:
+            run.font.imprint = key_format['imprint']
 
     # Добавляем диапазон страниц в столбец "Номера листов"
     if start_page == end_page:
