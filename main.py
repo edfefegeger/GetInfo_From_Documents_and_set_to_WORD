@@ -78,9 +78,9 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     for detection in result:
                         img_text = detection[1]
                         text += " " + img_text  # Добавляем текст изображения к тексту страницы
-                        if text_q == 'y':
-                            print("Распознанный текст на странице:")
-                            print(text)  # Выводим распознанный текст страницы
+                    if text_q == 'y':
+                        print("Распознанный текст на странице:")
+                        print(text)  # Выводим распознанный текст страницы
                         # print("Распознанный текст на странице:")
                         # print(text)  # Выводим распознанный текст страницы
 
@@ -121,8 +121,7 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                 found_outgoing_num = None
             else:
                 if "End" in text:  
-                    
-
+                
                     print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
                     end_page = page_num + 1  # Конечная страница текущего документа
                     update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, count)
@@ -182,6 +181,11 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         
         key_text = key_description['description']
         key_text2 = key_description['description2'] # Получаем description2, если он есть, или пустую строку
+
+        
+
+
+
         if key_text2 != "":
             if found_date:
                 key_text2 += f", от {found_date}"
@@ -273,6 +277,11 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             run.font.emboss = key_format['emboss']
         if key_format['imprint'] is not None:
             run.font.imprint = key_format['imprint']
+    else:
+        null_row = table.add_row()
+        column_cell = null_row.cells[column_index]  # Получаем ячейку в нужном столбце
+        # Используем column_cell вместо column_index
+        null_row.text = ""  # Обновляем текст ячейки с key_text
 
     # Добавляем диапазон страниц в столбец "Номера листов"
     if start_page == end_page:
