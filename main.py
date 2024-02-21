@@ -14,7 +14,7 @@ def clear_word_table(word_path):
         table._element.remove(row._element)  # Удаляем строку
     doc.save(word_path)
 
-def process_pdf(pdf_path, keywords, word_path, threshold, languages):
+def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q):
 
     reader = easyocr.Reader(['en', languages], gpu=True)
 
@@ -31,8 +31,10 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages):
             text = page.get_text()
 
             print(f"Обрабатывается страница {page_num + 1}...")
-            print("Распознанный текст на странице:")
-            print(text)  # Выводим распознанный текст страницы
+
+            if text_q == 'y':
+                print("Распознанный текст на странице:")
+                print(text)  # Выводим распознанный текст страницы
 
             # Если на странице есть текст, обрабатываем ее
             if text:
@@ -45,6 +47,8 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages):
                     if recognition_percentage >= threshold:
                         print(f"Ключевое слово '{keyword}' найдено с процентом распознавания {recognition_percentage}%")
                         found_keywords.append(keyword)
+                    else: 
+                        print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}%")
 
                 # Поиск даты, если она еще не была найдена
                 if not found_date:
@@ -71,8 +75,11 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages):
                     for detection in result:
                         img_text = detection[1]
                         text += " " + img_text  # Добавляем текст изображения к тексту страницы
-                        print("Распознанный текст на странице:")
-                        print(text)  # Выводим распознанный текст страницы
+                        if text_q == 'y':
+                            print("Распознанный текст на странице:")
+                            print(text)  # Выводим распознанный текст страницы
+                        # print("Распознанный текст на странице:")
+                        # print(text)  # Выводим распознанный текст страницы
 
                 # Поиск ключевых слов после добавления текста изображения
                 for keyword in keywords:
@@ -83,6 +90,8 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages):
                     if recognition_percentage >= threshold:
                         print(f"Ключевое слово '{keyword}' добавлено с процентом распознавания {recognition_percentage}%")
                         found_keywords.append(keyword)
+                    else: 
+                        print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}%")
 
                 # Поиск исходящего номера после добавления текста изображения
                 if not found_outgoing_num:
@@ -370,17 +379,19 @@ def read_keys(keys_path):
 
 
 
+
 if __name__ == "__main__":
     file_path = input("Введите путь к файлу (PDF): ")
     threshold = int(input("Введите минимальное пороговое значение для распознавания текста в %: "))
     languages = input("Введите язык для использования (ru или uk или be) ")
+    text_q = input("Выводить распознаный текст? (y = да, n = нет) ")
 
     word_path = "result.docx"
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
     clear_word_table(word_path)  # Очищаем таблицу перед обработкой нового файла PDF
     print("Таблица 'Result.docx' очищена")
-    found_keywords, found_date = process_pdf(file_path, keywords, word_path, threshold, languages)
+    found_keywords, found_date = process_pdf(file_path, keywords, word_path, threshold, languages, text_q)
     try:
         update_word_table(word_path, keywords, found_keywords, found_date)  # Передаем словарь с описаниями ключей в функцию
     except Exception as e:
