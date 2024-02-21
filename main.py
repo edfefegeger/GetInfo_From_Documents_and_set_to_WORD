@@ -118,6 +118,7 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                 update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, count)
                 found_keywords = []
                 found_date = None
+                found_outgoing_num = None
             else:
                 if "End" in text:  
                     
@@ -128,6 +129,7 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     count += 1
                     found_keywords = []
                     found_date = None
+                    found_outgoing_num = None
                     start_page = page_num + 2  # Начальная страница следующего документа      
 
     # Записываем информацию в файл Word после окончания обработки документа
