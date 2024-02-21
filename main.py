@@ -389,8 +389,7 @@ if __name__ == "__main__":
     file_path = input("Введите путь к файлу (PDF): ")
     threshold = int(input("Введите минимальное пороговое значение для распознавания текста в %: "))
     languages = input("Введите язык для использования (ru или uk или be) ")
-
-
+    
     word_path = "result.docx"
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
