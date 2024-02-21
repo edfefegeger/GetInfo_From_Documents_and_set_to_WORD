@@ -14,7 +14,8 @@ def clear_word_table(word_path):
         table._element.remove(row._element)  # Удаляем строку
     doc.save(word_path)
 
-def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q):
+def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, count):
+    count = 0
 
     reader = easyocr.Reader(['en', languages], gpu=True)
 
@@ -114,14 +115,16 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q):
             if len(pdf) == 1:  # Если документ содержит только одну страницу
                 print("Документ содержит только одну страницу. Завершение обработки.")
                 end_page = 1  # Конечная страница текущего документа
-                update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num)
+                update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, count)
                 found_keywords = []
                 found_date = None
             else:
                 if "End" in text:  
+                    count += 1
+
                     print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
                     end_page = page_num + 1  # Конечная страница текущего документа
-                    update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num)
+                    update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, count)
                     found_keywords = []
                     found_date = None
                     start_page = page_num + 2  # Начальная страница следующего документа      
@@ -131,7 +134,7 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q):
 
 
 
-def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num):
+def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, count):
     doc = Document(word_path)
     table = doc.tables[0]
     is_two_str = False
@@ -283,14 +286,15 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     if outgoing_index is not None:  # Проверяем, был ли найден столбец с исходящим номером
         # Добавляем исходящий номер в соответствующую ячейку
         outgoing_cell = table.cell(new_row_index, outgoing_index)
-        if found_outgoing_num is not None:
+        if found_outgoing_num:
             outgoing_cell.text = found_outgoing_num
         outgoing_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
     else:
         print("Столбец 'исходящие' не найден в таблице.")
 
     list_num = table.cell(new_row_index, num_index + 1)
-    list_num.text = str(new_row_index - 1)
+    list_num.text = str(count)
+    
     list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
 
     doc.save(word_path)
@@ -384,9 +388,10 @@ if __name__ == "__main__":
     keywords = read_keys(keys_path)
     clear_word_table(word_path)  # Очищаем таблицу перед обработкой нового файла PDF
     print("Таблица 'Result.docx' очищена")
-    found_keywords, found_date = process_pdf(file_path, keywords, word_path, threshold, languages, text_q)
+    count = 1
+    found_keywords, found_date = process_pdf(file_path, keywords, word_path, threshold, languages, text_q, count)
     try:
-        update_word_table(word_path, keywords, found_keywords, found_date)  # Передаем словарь с описаниями ключей в функцию
+        update_word_table(word_path, keywords, found_keywords, found_date, count)  # Передаем словарь с описаниями ключей в функцию
     except Exception as e:
         print("Конец")
 
