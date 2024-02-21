@@ -15,7 +15,7 @@ def clear_word_table(word_path):
     doc.save(word_path)
 
 def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, count):
-    count = 0
+    count = 1
 
     reader = easyocr.Reader(['en', languages], gpu=True)
 
@@ -120,11 +120,12 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                 found_date = None
             else:
                 if "End" in text:  
-                    count += 1
+                    
 
                     print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
                     end_page = page_num + 1  # Конечная страница текущего документа
                     update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, count)
+                    count += 1
                     found_keywords = []
                     found_date = None
                     start_page = page_num + 2  # Начальная страница следующего документа      
