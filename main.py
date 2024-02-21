@@ -31,6 +31,8 @@ def process_pdf(pdf_path, keywords, word_path, threshoud, languages):
             text = page.get_text()
 
             print(f"Обрабатывается страница {page_num + 1}...")
+            print("Распознанный текст на странице:")
+            print(text)  # Выводим распознанный текст страницы
 
             # Если на странице есть текст, обрабатываем ее
             if text:
@@ -64,6 +66,8 @@ def process_pdf(pdf_path, keywords, word_path, threshoud, languages):
                     for detection in result:
                         img_text = detection[1]
                         text += " " + img_text  # Добавляем текст изображения к тексту страницы
+                        print("Распознанный текст на странице:")
+                        print(text)  # Выводим распознанный текст страницы
 
                 # Поиск ключевых слов после добавления текста изображения
                 for keyword in keywords:
@@ -104,6 +108,7 @@ def process_pdf(pdf_path, keywords, word_path, threshoud, languages):
     return found_keywords, found_date
 
 
+
 def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num):
     doc = Document(word_path)
     table = doc.tables[0]
@@ -111,6 +116,7 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     first = False
     incoming_index = None 
     outgoing_index = None  # Добавляем индекс для столбца с исходящим номером
+    recognized_text = ""  # Переменная для хранения всего распознанного текста
     # Находим индекс столбца "Наименование документа"
     for cell in table.rows[0].cells:
         if cell.text.strip() == "Наименование документа":
@@ -278,39 +284,6 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
 
 
 
-def process_image(image_path, keywords, word_path):
-    reader = easyocr.Reader(['en', 'ru', 'uk', 'be'], gpu=True)
-
-
-    # Поиск ключевых слов и даты
-    found_keywords = []
-    found_date = None  # Здесь будем хранить найденную дату
-
-    # Распознаем текст на изображении
-    result = reader.readtext(image_path)
-    for detection in result:
-        text = detection[1]
-        for keyword in keywords:
-            if keyword in text:
-                print(f"Ключевое слово '{keyword}' найдено")
-                found_keywords.append(keyword)
-
-        # Поиск даты в тексте
-        if not found_date:  # Проверяем, была ли найдена дата ранее
-            date = find_dates(text)
-            
-            if date:
-                print("Дата найдена:", date)
-                found_date = date
-            else:
-                print("Дата не найдена")
-
-    update_word_table(word_path, keywords, found_keywords, found_date)
-
-    return found_keywords, found_date
-
-
-
 def find_first_matching_number(text):
     pattern = r'№\d{1,5}дск'
     match = re.search(pattern, text)  # Регулярное выражение для поиска номера
@@ -389,7 +362,7 @@ if __name__ == "__main__":
     file_path = input("Введите путь к файлу (PDF): ")
     threshold = int(input("Введите минимальное пороговое значение для распознавания текста в %: "))
     languages = input("Введите язык для использования (ru или uk или be) ")
-    
+
     word_path = "result.docx"
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
