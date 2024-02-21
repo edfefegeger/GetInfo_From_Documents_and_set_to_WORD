@@ -14,7 +14,7 @@ def clear_word_table(word_path):
         table._element.remove(row._element)  # Удаляем строку
     doc.save(word_path)
 
-def process_pdf(pdf_path, keywords, word_path, threshoud, languages):
+def process_pdf(pdf_path, keywords, word_path, threshold, languages):
 
     reader = easyocr.Reader(['en', languages], gpu=True)
 
@@ -38,22 +38,27 @@ def process_pdf(pdf_path, keywords, word_path, threshoud, languages):
             if text:
                 # Поиск ключевых слов
                 for keyword in keywords:
-                    if keyword in text:
-                        print(f"Ключевое слово '{keyword}' найдено")
+                    key_words = keyword.split()  # Разбиваем ключевое слово на отдельные слова
+                    found_count = sum(word in text for word in key_words)  # Подсчитываем количество найденных слов
+                    # Вычисляем процент распознавания для ключа
+                    recognition_percentage = (found_count / len(key_words)) * 100
+                    if recognition_percentage >= threshold:
+                        print(f"Ключевое слово '{keyword}' найдено с процентом распознавания {recognition_percentage}%")
                         found_keywords.append(keyword)
 
-
-                if not found_date:  # Проверяем, была ли найдена дата ранее
+                # Поиск даты, если она еще не была найдена
+                if not found_date:
                     date = find_dates(text)
                     if date:
                         print("Дата найдена:", date)
                         found_date = date 
 
+                # Поиск исходящего номера, если он еще не был найден
                 if not found_outgoing_num:
-                    oucoming_num = find_first_matching_number(text)
-                    if oucoming_num:
-                        print(f"Найден исходящий номер {oucoming_num}")
-                        found_outgoing_num = oucoming_num
+                    outgoing_num = find_first_matching_number(text)
+                    if outgoing_num:
+                        print(f"Найден исходящий номер {outgoing_num}")
+                        found_outgoing_num = outgoing_num
 
             # Если на странице есть изображения, ищем текст в них
             images = page.get_images(full=True)
@@ -71,19 +76,23 @@ def process_pdf(pdf_path, keywords, word_path, threshoud, languages):
 
                 # Поиск ключевых слов после добавления текста изображения
                 for keyword in keywords:
-                    similarity = fuzz.partial_ratio(keyword, text)
-                    print(f"Сравнение с ключевым словом '{keyword}' сходится с {similarity}%")
-                    if similarity > threshoud:  # Устанавливаем порог сходства
-                        print(f"Ключевое слово '{keyword}' добавлено со сходством {similarity}%")
+                    key_words = keyword.split()  # Разбиваем ключевое слово на отдельные слова
+                    found_count = sum(word in text for word in key_words)  # Подсчитываем количество найденных слов
+                    # Вычисляем процент распознавания для ключа
+                    recognition_percentage = (found_count / len(key_words)) * 100
+                    if recognition_percentage >= threshold:
+                        print(f"Ключевое слово '{keyword}' добавлено с процентом распознавания {recognition_percentage}%")
                         found_keywords.append(keyword)
 
+                # Поиск исходящего номера после добавления текста изображения
                 if not found_outgoing_num:
-                    oucoming_num = find_first_matching_number(text)
-                    if oucoming_num:
-                        print(f"Найден исходящий номер  {oucoming_num}")
-                        found_outgoing_num = oucoming_num
+                    outgoing_num = find_first_matching_number(text)
+                    if outgoing_num:
+                        print(f"Найден исходящий номер  {outgoing_num}")
+                        found_outgoing_num = outgoing_num
 
-                if not found_date:  # Проверяем, была ли найдена дата ранее
+                # Поиск даты после добавления текста изображения
+                if not found_date:
                     date = find_dates(text)
                     if date:
                         print("Дата найдена:", date)
@@ -117,6 +126,9 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     incoming_index = None 
     outgoing_index = None  # Добавляем индекс для столбца с исходящим номером
     recognized_text = ""  # Переменная для хранения всего распознанного текста
+    total_key_words = sum(len(keyword.split()) for keyword in keywords.keys())
+    # Количество найденных слов
+    total_found_words = 0
     # Находим индекс столбца "Наименование документа"
     for cell in table.rows[0].cells:
         if cell.text.strip() == "Наименование документа":
