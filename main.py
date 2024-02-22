@@ -168,6 +168,10 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         if cell.text.strip() == "№ з/п":
             num_index = cell._element.getparent().index(cell._element) - 2
             break 
+    for cell in table.rows[1].cells:
+        if cell.text.strip() == "входящий":
+            ingoing_index = cell._element.getparent().index(cell._element) - 1
+            break 
 
     # Добавляем новую строку в таблицу
     new_row_index = len(table.rows)
@@ -323,6 +327,11 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
                 run.font.size = font_size
     else:
         print("Столбец 'исходящие' не найден в таблице.")
+
+
+    ingoing_index = table.cell(new_row_index, ingoing_index)
+    ingoing_index.text = 'Тест'
+
 
 
     list_num = table.cell(new_row_index, num_index + 1)
