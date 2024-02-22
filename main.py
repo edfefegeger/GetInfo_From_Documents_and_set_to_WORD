@@ -305,7 +305,7 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         print("Столбец 'исходящие' не найден в таблице.")
 
     list_num = table.cell(new_row_index, num_index + 1)
-    list_num.text = str(count)
+    list_num.text = str(count),"."
     
     list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
 
