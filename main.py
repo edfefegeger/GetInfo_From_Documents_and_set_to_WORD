@@ -23,7 +23,8 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
     found_keywords = []
     found_date = None  # Здесь будем хранить найденную дату
     found_outgoing_num = None
-
+    total_text = ""
+    total_found_keywords = []
     start_page = 1  # Начальная страница текущего документа
 
     with fitz.open(pdf_path) as pdf:
@@ -49,7 +50,7 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     recognition_percentage = (found_count / len(key_words)) * 100
                     if recognition_percentage >= threshold:
                         print(f"Ключевое слово '{keyword}' найдено с процентом распознавания {recognition_percentage}%")
-                        found_keywords.append(keyword)
+                        total_found_keywords.append(keyword)
                     else: 
                         print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}%")
 
@@ -77,7 +78,7 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     result = reader.readtext(image_bytes)
                     for detection in result:
                         img_text = detection[1]
-                        text += " " + img_text  # Добавляем текст изображения к тексту страницы
+                        total_text += " " + img_text  # Добавляем текст изображения к тексту страницы
                     if text_q == 'y':
                         print("Распознанный текст на странице:")
                         print(text)  # Выводим распознанный текст страницы
@@ -93,8 +94,8 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     # Вычисляем процент распознавания для ключа
                     recognition_percentage = (found_count / len(key_words)) * 100
                     if recognition_percentage >= threshold:
-                        print(f"Ключевое слово '{keyword}' добавлено с процентом распознавания {recognition_percentage}%")
-                        found_keywords.append(keyword)
+                        print(f"Ключевое слово '{keyword}' с процентом распознавания {recognition_percentage}%")
+                        total_found_keywords.append(keyword)
                     else: 
                         print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}%")
 
@@ -120,33 +121,36 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                 found_date = None
                 found_outgoing_num = None
             else:
-                if "End" in text:  
-                
+                if "End" in text:
+                    # Вычисляем процент ключевых слов на всех страницах
+                    total_keyword_count = sum(sum(word in total_text for word in keyword.split()) for keyword in keywords)
+                    if total_text.strip():  # Проверяем, содержит ли total_text хотя бы одно слово
+                        total_keywords_percentage = (total_keyword_count / len(total_text.split())) * 100
+                    else:
+                        total_keywords_percentage = 0  # Устанавливаем процент ключевых слов равным нулю, если total_text пуст
+                    print(f"Суммарный процент ключевых слов до страницы 'End': {total_keywords_percentage}%")
+
                     print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
                     end_page = page_num + 1  # Конечная страница текущего документа
-                    update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, count)
+                    update_word_table(word_path, keywords, total_found_keywords, found_date, start_page, end_page, found_outgoing_num, count)
                     count += 1
-                    found_keywords = []
+                    total_found_keywords = []
                     found_date = None
                     found_outgoing_num = None
                     start_page = page_num + 2  # Начальная страница следующего документа      
 
     # Записываем информацию в файл Word после окончания обработки документа
-    return found_keywords, found_date
+    return total_found_keywords, found_date
 
 
 
 def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, count):
     doc = Document(word_path)
     table = doc.tables[0]
-    is_two_str = False
-    first = False
-    incoming_index = None 
     outgoing_index = None  # Добавляем индекс для столбца с исходящим номером
-    recognized_text = ""  # Переменная для хранения всего распознанного текста
-    total_key_words = sum(len(keyword.split()) for keyword in keywords.keys())
-    # Количество найденных слов
-    total_found_words = 0
+
+    font_name = 'Times New Roman'
+    font_size = Pt(12)
     # Находим индекс столбца "Наименование документа"
     for cell in table.rows[0].cells:
         if cell.text.strip() == "Наименование документа":
@@ -292,22 +296,35 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     list_cell = table.cell(new_row_index, list_index)
     list_cell.text = pages_range
     list_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+    # Применяем параметры шрифта к тексту ячейки
+    for paragraph in list_cell.paragraphs:
+        for run in paragraph.runs:
+            run.font.name = font_name
+            run.font.size = font_size
     
     # if is_two_str == False:
         # Добавляем номер заказа в соответствующую ячейку
-    if outgoing_index is not None:  # Проверяем, был ли найден столбец с исходящим номером
-        # Добавляем исходящий номер в соответствующую ячейку
+    if outgoing_index is not None:  
         outgoing_cell = table.cell(new_row_index, outgoing_index)
         if found_outgoing_num:
             outgoing_cell.text = found_outgoing_num
         outgoing_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+        # Применяем параметры шрифта к тексту ячейки
+        for paragraph in outgoing_cell.paragraphs:
+            for run in paragraph.runs:
+                run.font.name = font_name
+                run.font.size = font_size
     else:
         print("Столбец 'исходящие' не найден в таблице.")
 
     list_num = table.cell(new_row_index, num_index + 1)
-    list_num.text = str(count),"."
-    
+    list_num.text = str(count),
     list_num.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+    # Применяем параметры шрифта к тексту ячейки
+    for paragraph in list_num.paragraphs:
+        for run in paragraph.runs:
+            run.font.name = font_name
+            run.font.size = font_size
 
     doc.save(word_path)
 
@@ -326,7 +343,6 @@ def find_first_matching_number(text):
 def find_dates(text):
     # Шаблон для поиска даты в формате DD.MM.YYYY
     date_pattern = r'\b\d{2}[,.]?\d{2}[,.]?\d{4}\b'
-
     # Находим первое совпадение с шаблоном
     match = re.search(date_pattern, text)
     if match:
