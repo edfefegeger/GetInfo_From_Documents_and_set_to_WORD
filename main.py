@@ -186,16 +186,16 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         key_text = key_description['description']
         key_text2 = key_description['description2'] # Получаем description2, если он есть, или пустую строку
 
-        
-
-
-
+    
         if key_text2 != "":
             if found_date:
                 key_text2 += f", от {found_date}"
             is_two_str = True
             new_row = table.add_row()
             column_cell = new_row.cells[column_index]  # Получаем ячейку в нужном столбце
+            column_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Устанавливаем выравнивание по левому краю
+            column_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
             # Используем column_cell вместо column_index
             run2 = column_cell.paragraphs[0].add_run(key_text2)
         # Применяем форматирование к тексту
@@ -286,6 +286,10 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         column_cell = null_row.cells[column_index]  # Получаем ячейку в нужном столбце
         # Используем column_cell вместо column_index
         null_row.text = ""  # Обновляем текст ячейки с key_text
+        # Устанавливаем выравнивание по центру
+        column_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # Устанавливаем выравнивание по левому краю
+        column_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
 
     # Добавляем диапазон страниц в столбец "Номера листов"
     if start_page == end_page:
@@ -308,7 +312,10 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         outgoing_cell = table.cell(new_row_index, outgoing_index)
         if found_outgoing_num:
             outgoing_cell.text = found_outgoing_num
-        outgoing_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER  # Выравнивание по центру
+        # Устанавливаем выравнивание по центру
+        outgoing_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # Устанавливаем выравнивание по левому краю
+        outgoing_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
         # Применяем параметры шрифта к тексту ячейки
         for paragraph in outgoing_cell.paragraphs:
             for run in paragraph.runs:
@@ -316,6 +323,7 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
                 run.font.size = font_size
     else:
         print("Столбец 'исходящие' не найден в таблице.")
+
 
     list_num = table.cell(new_row_index, num_index + 1)
     list_num.text = str(count),
