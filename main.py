@@ -313,14 +313,14 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
 
 
 
-
 def find_first_matching_number(text):
-    pattern = r'№\d{1,5}дск'
-    match = re.search(pattern, text)  # Регулярное выражение для поиска номера
+    pattern = r'№(\d{1,5})(дск)'  # Включаем номер и "дск" в группы, чтобы их можно было извлечь
+    match = re.search(pattern, text)
     if match:
-        return match.group()
+        return match.group(1) + match.group(2)  # Возвращаем значение номера и "дск"
     else:           
         return None
+
 
 
 def find_dates(text):
