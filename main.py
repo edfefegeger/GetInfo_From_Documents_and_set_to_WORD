@@ -331,7 +331,12 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
 
     ingoing_index = table.cell(new_row_index, ingoing_index)
     ingoing_index.text = 'Тест'
-
+    ingoing_index.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    ingoing_index.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
+    for paragraph in ingoing_index.paragraphs:
+        for run in paragraph.runs:
+            run.font.name = font_name
+            run.font.size = font_size
 
 
     list_num = table.cell(new_row_index, num_index + 1)
@@ -348,13 +353,21 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
 
 
 def find_first_matching_number(text):
-    pattern = r'№(\d{1,5})(дск)'  # Включаем номер и "дск" в группы, чтобы их можно было извлечь
+    pattern = r'ИСХ№(\d{1,5})(дск)'  # Включаем номер и "дск" в группы, чтобы их можно было извлечь
     match = re.search(pattern, text)
     if match:
         return match.group(1) + match.group(2)  # Возвращаем значение номера и "дск"
     else:           
         return None
+    
 
+def find_first_matching_number2(text):
+    pattern2 = r'ВХ№(\d{1,5})(дск)'  # Включаем номер и "дск" в группы, чтобы их можно было извлечь
+    match2 = re.search(pattern2, text)
+    if match2:
+        return match2.group(1) + match2.group(2)  # Возвращаем значение номера и "дск"
+    else:           
+        return None
 
 
 def find_dates(text):
