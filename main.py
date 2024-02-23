@@ -81,7 +81,7 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                         total_text += " " + img_text  # Добавляем текст изображения к тексту страницы
                     if text_q == 'y':
                         print("Распознанный текст на странице:")
-                        print(text)  # Выводим распознанный текст страницы
+                        print(total_text)  # Выводим распознанный текст страницы
                         # print("Распознанный текст на странице:")
                         # print(text)  # Выводим распознанный текст страницы
 
@@ -353,16 +353,16 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
 
 
 def find_first_matching_number(text):
-    pattern = r'ИСХ№(\d{1,5})(дск)'  # Включаем номер и "дск" в группы, чтобы их можно было извлечь
+    pattern = r'ИСХ№(\d{1,5})(?:\d*[-/]\d*)*дск'  # Общий шаблон для обеих форматов номеров
     match = re.search(pattern, text)
     if match:
-        return match.group(1) + match.group(2)  # Возвращаем значение номера и "дск"
-    else:           
+        return match.group(0)  # Возвращаем всю найденную строку
+    else:
         return None
     
 
 def find_first_matching_number2(text):
-    pattern2 = r'ВХ№(\d{1,5})(дск)'  # Включаем номер и "дск" в группы, чтобы их можно было извлечь
+    pattern2 = r'ВХ№(\d{1,5})(?:\d*[-/]\d*)*дск'  # Включаем номер и "дск" в группы, чтобы их можно было извлечь
     match2 = re.search(pattern2, text)
     if match2:
         return match2.group(1) + match2.group(2)  # Возвращаем значение номера и "дск"
@@ -431,9 +431,6 @@ def read_keys(keys_path):
         print(f"Добавлен Ключ: {key}. с описанием: {description} {description2}")
 
     return keys
-
-
-
 
 if __name__ == "__main__":
     file_path = input("Введите путь к файлу (PDF): ")
