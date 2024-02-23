@@ -35,8 +35,8 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
             print(f"Обрабатывается страница {page_num + 1}...")
 
             if text_q == 'y':
-                print("Распознанный текст на странице:")
-                print(text)  # Выводим распознанный текст страницы
+                print("Распознанный текст на странице: \n")
+                print(text, '\n')  # Выводим распознанный текст страницы
 
             # Если на странице есть текст, обрабатываем ее
             if text:
@@ -49,23 +49,23 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     # Вычисляем процент распознавания для ключа
                     recognition_percentage = (found_count / len(key_words)) * 100
                     if recognition_percentage >= threshold:
-                        print(f"Ключевое слово '{keyword}' найдено с процентом распознавания {recognition_percentage}%")
+                        print(f"Ключевое слово '{keyword}' найдено с процентом распознавания {recognition_percentage}% \n")
                         total_found_keywords.append(keyword)
                     else: 
-                        print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}%")
+                        print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}% \n")
 
                 # Поиск даты, если она еще не была найдена
                 if not found_date:
                     date = find_dates(text)
                     if date:
-                        print("Дата найдена:", date)
+                        print("Дата найдена:", date, '\n')
                         found_date = date 
 
                 # Поиск исходящего номера, если он еще не был найден
                 if not found_outgoing_num:
                     outgoing_num = find_first_matching_number(text)
                     if outgoing_num:
-                        print(f"Найден исходящий номер {outgoing_num}")
+                        print(f"Найден исходящий номер {outgoing_num} \n")
                         found_outgoing_num = outgoing_num
 
             # Если на странице есть изображения, ищем текст в них
@@ -80,8 +80,8 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                         img_text = detection[1]
                         total_text += " " + img_text  # Добавляем текст изображения к тексту страницы
                     if text_q == 'y':
-                        print("Распознанный текст на странице:")
-                        print(total_text)  # Выводим распознанный текст страницы
+                        print("Распознанный текст на странице:\n")
+                        print(total_text, '\n')  # Выводим распознанный текст страницы
                         # print("Распознанный текст на странице:")
                         # print(text)  # Выводим распознанный текст страницы
 
@@ -94,27 +94,27 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     # Вычисляем процент распознавания для ключа
                     recognition_percentage = (found_count / len(key_words)) * 100
                     if recognition_percentage >= threshold:
-                        print(f"Ключевое слово '{keyword}' с процентом распознавания {recognition_percentage}%")
+                        print(f"Ключевое слово '{keyword}' с процентом распознавания {recognition_percentage}% \n")
                         total_found_keywords.append(keyword)
                     else: 
-                        print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}%")
+                        print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}% \n")
 
                 # Поиск исходящего номера после добавления текста изображения
                 if not found_outgoing_num:
                     outgoing_num = find_first_matching_number(text)
                     if outgoing_num:
-                        print(f"Найден исходящий номер  {outgoing_num}")
+                        print(f"Найден исходящий номер  {outgoing_num} \n")
                         found_outgoing_num = outgoing_num
 
                 # Поиск даты после добавления текста изображения
                 if not found_date:
                     date = find_dates(text)
                     if date:
-                        print("Дата найдена:", date)
+                        print("Дата найдена:", date, '\n')
                         found_date = date 
 
             if len(pdf) == 1:  # Если документ содержит только одну страницу
-                print("Документ содержит только одну страницу. Завершение обработки.")
+                print("Документ содержит только одну страницу. Завершение обработки. \n")
                 end_page = 1  # Конечная страница текущего документа
                 update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, count)
                 found_keywords = []
@@ -128,9 +128,9 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                         total_keywords_percentage = (total_keyword_count / len(total_text.split())) * 100
                     else:
                         total_keywords_percentage = 0  # Устанавливаем процент ключевых слов равным нулю, если total_text пуст
-                    print(f"Суммарный процент ключевых слов до страницы 'End': {total_keywords_percentage}%")
+                    print(f"Суммарный процент ключевых слов до страницы 'End': {total_keywords_percentage}% \n")
 
-                    print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
+                    print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа. \n")
                     end_page = page_num + 1  # Конечная страница текущего документа
                     update_word_table(word_path, keywords, total_found_keywords, found_date, start_page, end_page, found_outgoing_num, count)
                     count += 1
@@ -353,19 +353,19 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
 
 
 def find_first_matching_number(text):
-    pattern = r'ИСХ№(\d{1,5})(?:\d*[-/]\d*)*дск'  # Общий шаблон для обеих форматов номеров
+    pattern = r'ИСХ№(\d{1,5}(?:\d*[-/]\d*)*дск)'  # Используем группировку для всего номера, кроме "ИСХ№"
     match = re.search(pattern, text)
     if match:
-        return match.group(0)  # Возвращаем всю найденную строку
+        return match.group(1)  # Возвращаем содержимое первой группы (найденный номер)
     else:
         return None
     
 
 def find_first_matching_number2(text):
-    pattern2 = r'ВХ№(\d{1,5})(?:\d*[-/]\d*)*дск'  # Включаем номер и "дск" в группы, чтобы их можно было извлечь
+    pattern2 = r'ВХ№(\d{1,5}(?:\d*[-/]\d*)*дск)'  # Включаем номер и "дск" в группы, чтобы их можно было извлечь
     match2 = re.search(pattern2, text)
     if match2:
-        return match2.group(1) + match2.group(2)  # Возвращаем значение номера и "дск"
+        return match2.group(1)  # Возвращаем значение номера и "дск"
     else:           
         return None
 
