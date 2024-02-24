@@ -207,6 +207,10 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         
         key_text = key_description['description']
         key_text2 = key_description['description2'] # Получаем description2, если он есть, или пустую строку
+        key_text3 = key_description['description3'] # Получаем description3, если он есть, или пустую строку
+        key_text4 = key_description['description4'] # Получаем description4, если он есть, или пустую строку
+        key_text5 = key_description['description5'] # Получаем description5, если он есть, или пустую строку
+
 
     
         if key_text2 != "":
@@ -219,11 +223,57 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             # Устанавливаем выравнивание по левому краю
             column_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
             # Используем column_cell вместо column_index
-            column_cell.text = key_text
+            column_cell.text = key_text2
             for paragraph in column_cell.paragraphs:
                 for run in paragraph.runs:
                     run.font.name = font_name
                     run.font.size = font_size
+
+        if key_text3 != "":
+            if found_date:
+                key_text3 += f", от {found_date}"
+            is_two_str = True
+            new_row = table.add_row()
+            column_cell = new_row.cells[column_index]  # Получаем ячейку в нужном столбце
+            column_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Устанавливаем выравнивание по левому краю
+            column_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
+            # Используем column_cell вместо column_index
+            column_cell.text = key_text3
+            for paragraph in column_cell.paragraphs:
+                for run in paragraph.runs:
+                    run.font.name = font_name
+                    run.font.size = font_size
+        if key_text4 != "":
+            if found_date:
+                key_text4 += f", от {found_date}"
+            new_row = table.add_row()
+            column_cell = new_row.cells[column_index]  # Получаем ячейку в нужном столбце
+            column_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Устанавливаем выравнивание по левому краю
+            column_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
+            # Используем column_cell вместо column_index
+            column_cell.text = key_text4
+            for paragraph in column_cell.paragraphs:
+                for run in paragraph.runs:
+                    run.font.name = font_name
+                    run.font.size = font_size
+        
+        if key_text5 != "":
+            if found_date:
+                key_text5 += f", от {found_date}"
+            new_row = table.add_row()
+            column_cell = new_row.cells[column_index]  # Получаем ячейку в нужном столбце
+            column_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Устанавливаем выравнивание по левому краю
+            column_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
+            # Используем column_cell вместо column_index
+            column_cell.text = key_text5
+            for paragraph in column_cell.paragraphs:
+                for run in paragraph.runs:
+                    run.font.name = font_name
+                    run.font.size = font_size
+
 
         else:
             if found_date:
@@ -344,6 +394,10 @@ def read_keys(keys_path):
     key = ''  # Переменная для хранения текущего ключа
     description = ''  # Переменная для хранения описания текущего ключа
     description2 = ''  # Переменная для хранения второго описания текущего ключа
+    description3 = ''  # Переменная для хранения третьего описания текущего ключа
+    description4 = ''  # Переменная для хранения четвертого описания текущего ключа
+    description5 = ''  # Переменная для хранения пятого описания текущего ключа
+
     cell_format = None  # Переменная для хранения форматирования текущего ключа
     
     for row in doc.tables[0].rows[1:]:  # Пропускаем первую строку, так как это заголовок
@@ -353,11 +407,16 @@ def read_keys(keys_path):
         if cell_0_number:  # Если ячейка не пустая, это начало нового ключа
             # Если есть предыдущий ключ, сохраняем его в словарь
             if key:
-                keys[key] = {'description': description, 'description2': description2, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
-                print(f"Добавлен Ключ: {key}. с описанием: {description} {description2}")
+                keys[key] = {'description': description, 'description2': description2, 
+                             'description3': description3, 'description4': description4,
+                             'description5': description5, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
+                print(f"Добавлен Ключ: {key}. с описанием: {description} {description2} {description3} {description4} {description5}")
             key = cell_0_text  # Обновляем текущий ключ
             description = row.cells[2].text.strip()  # Берем текст из второй ячейки в строке (столбец "Описание ключа")
             description2 = ''  # Обнуляем description2 для нового ключа
+            description3 = ''  # Обнуляем description3 для нового ключа
+            description4 = ''  # Обнуляем description4 для нового ключа
+            description5 = ''  # Обнуляем description5 для нового ключа
             cell_format = {}  # Сбрасываем форматирование для нового ключа
             for paragraph in row.cells[1].paragraphs:
                 for run in paragraph.runs:
@@ -380,13 +439,23 @@ def read_keys(keys_path):
                     cell_format['imprint'] = run.font.imprint
         else:
             # Если ячейка пустая, это продолжение описания или ключа
-                description2 += row.cells[2].text.strip()  # Добавляем новую строку к текущему описанию 2
+            if not description2:
+                description2 = row.cells[2].text.strip()
+            elif not description3:
+                description3 = row.cells[2].text.strip()
+            elif not description4:
+                description4 = row.cells[2].text.strip()
+            elif not description5:
+                description5 = row.cells[2].text.strip()
+            else:
                 key += " " + row.cells[1].text.strip()  # Добавляем новую строку к текущему ключу
-    
+
     # Сохраняем информацию о последнем ключе
     if key:
-        keys[key] = {'description': description, 'description2': description2, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
-        print(f"Добавлен Ключ: {key}. с описанием: {description} {description2}")
+        keys[key] = {'description': description, 'description2': description2, 
+                     'description3': description3, 'description4': description4,
+                     'description5': description5, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
+        print(f"Добавлен Ключ: {key}. с описанием: {description} {description2} {description3} {description4} {description5}")
 
     return keys
 
