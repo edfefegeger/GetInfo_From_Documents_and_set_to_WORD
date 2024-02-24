@@ -219,44 +219,12 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
             # Устанавливаем выравнивание по левому краю
             column_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
             # Используем column_cell вместо column_index
-            run2 = column_cell.paragraphs[0].add_run(key_text2)
-        # Применяем форматирование к тексту
-            key_format2 = key_description['format']
-            # column_index.text = key_text2  # Обновляем текст ячейки с key_text2
-            if key_format2['bold'] is not None:
-                run2.bold = key_format2['bold']
-            if key_format2['italic'] is not None:
-                run2.italic = key_format2['italic']
-            if key_format2['underline'] is not None:
-                run2.underline = key_format2['underline']
-            if key_format2['font_color'] is not None:
-                run2.font.color.rgb = key_format2['font_color']
-            if key_format2['font_size'] is not None:
-                run2.font.size = key_format2['font_size']
-            if key_format2['font_name'] is not None:
-                run2.font.name = key_format2['font_name']
-            if key_format2['highlight_color'] is not None:
-                run2.font.highlight_color = key_format2['highlight_color']
-            if key_format2['superscript'] is not None:
-                run2.font.superscript = key_format2['superscript']
-            if key_format2['subscript'] is not None:
-                run2.font.subscript = key_format2['subscript']
-            if key_format2['strike'] is not None:
-                run2.font.strike = key_format2['strike']
-            if key_format2['double_strike'] is not None:
-                run2.font.double_strike = key_format2['double_strike']
-            if key_format2['all_caps'] is not None:
-                run2.font.all_caps = key_format2['all_caps']
-            if key_format2['small_caps'] is not None:
-                run2.font.small_caps = key_format2['small_caps']
-            if key_format2['shadow'] is not None:
-                run2.font.shadow = key_format2['shadow']
-            if key_format2['outline'] is not None:
-                run2.font.outline = key_format2['outline']
-            if key_format2['emboss'] is not None:
-                run2.font.emboss = key_format2['emboss']
-            if key_format2['imprint'] is not None:
-                run2.font.imprint = key_format2['imprint']
+            column_cell.text = key_text
+            for paragraph in column_cell.paragraphs:
+                for run in paragraph.runs:
+                    run.font.name = font_name
+                    run.font.size = font_size
+
         else:
             if found_date:
                 key_text += f", от {found_date}"
@@ -266,43 +234,11 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
         else:
             new_paragraph = cell_paragraphs[-1]  # Или берем последний абзац, если он уже существует
         # Добавляем текст с форматированием
-        run = new_paragraph.add_run(key_text)
-        # Применяем форматирование к тексту
-        key_format = key_description['format']
-        if key_format['bold'] is not None:
-            run.bold = key_format['bold']
-        if key_format['italic'] is not None:
-            run.italic = key_format['italic']
-        if key_format['underline'] is not None:
-            run.underline = key_format['underline']
-        if key_format['font_color'] is not None:
-            run.font.color.rgb = key_format['font_color']
-        if key_format['font_size'] is not None:
-            run.font.size = key_format['font_size']
-        if key_format['font_name'] is not None:
-            run.font.name = key_format['font_name']
-        if key_format['highlight_color'] is not None:
-            run.font.highlight_color = key_format['highlight_color']
-        if key_format['superscript'] is not None:
-            run.font.superscript = key_format['superscript']
-        if key_format['subscript'] is not None:
-            run.font.subscript = key_format['subscript']
-        if key_format['strike'] is not None:
-            run.font.strike = key_format['strike']
-        if key_format['double_strike'] is not None:
-            run.font.double_strike = key_format['double_strike']
-        if key_format['all_caps'] is not None:
-            run.font.all_caps = key_format['all_caps']
-        if key_format['small_caps'] is not None:
-            run.font.small_caps = key_format['small_caps']
-        if key_format['shadow'] is not None:
-            run.font.shadow = key_format['shadow']
-        if key_format['outline'] is not None:
-            run.font.outline = key_format['outline']
-        if key_format['emboss'] is not None:
-            run.font.emboss = key_format['emboss']
-        if key_format['imprint'] is not None:
-            run.font.imprint = key_format['imprint']
+        new_run = new_paragraph.add_run(key_text)
+        new_run.font.name = font_name
+        new_run.font.size = font_size
+
+
     else:
         null_row = table.add_row()
         column_cell = null_row.cells[column_index]  # Получаем ячейку в нужном столбце
