@@ -397,7 +397,7 @@ def read_keys(keys_path):
     description3 = ''  # Переменная для хранения третьего описания текущего ключа
     description4 = ''  # Переменная для хранения четвертого описания текущего ключа
     description5 = ''  # Переменная для хранения пятого описания текущего ключа
-
+    description6 = ''  # Переменная для хранения шестого описания текущего ключа
     cell_format = None  # Переменная для хранения форматирования текущего ключа
     
     for row in doc.tables[0].rows[1:]:  # Пропускаем первую строку, так как это заголовок
@@ -417,6 +417,7 @@ def read_keys(keys_path):
             description3 = ''  # Обнуляем description3 для нового ключа
             description4 = ''  # Обнуляем description4 для нового ключа
             description5 = ''  # Обнуляем description5 для нового ключа
+            description6 = ''
             cell_format = {}  # Сбрасываем форматирование для нового ключа
             for paragraph in row.cells[1].paragraphs:
                 for run in paragraph.runs:
@@ -447,6 +448,8 @@ def read_keys(keys_path):
                 description4 = row.cells[2].text.strip()
             elif not description5:
                 description5 = row.cells[2].text.strip()
+            elif not description6:
+                description6 = row.cells[2].text.strip()
             else:
                 key += " " + row.cells[1].text.strip()  # Добавляем новую строку к текущему ключу
 
@@ -454,8 +457,8 @@ def read_keys(keys_path):
     if key:
         keys[key] = {'description': description, 'description2': description2, 
                      'description3': description3, 'description4': description4,
-                     'description5': description5, 'format': cell_format}  # Сохраняем информацию о форматировании в keys
-        print(f"Добавлен Ключ: {key}. с описанием: {description} {description2} {description3} {description4} {description5}")
+                     'description5': description5, 'description6': description6,'format': cell_format}  # Сохраняем информацию о форматировании в keys
+        print(f"Добавлен Ключ: {key}. с описанием: {description} {description2} {description3} {description4} {description5} {description6}")
 
     return keys
 
