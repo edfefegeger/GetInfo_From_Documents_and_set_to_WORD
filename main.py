@@ -38,8 +38,9 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
             print(f"Обрабатывается страница {page_num + 1}...")
 
             if text_q == 'y':
-                print("Распознанный текст на странице: \n")
-                print(text, '\n')  # Выводим распознанный текст страницы
+                print("Распознанный текст на странице с ручного ввода: \n")
+
+            print(text, '\n')  # Выводим распознанный текст страницы
 
             # Если на странице есть текст, обрабатываем ее
             if text:
@@ -92,8 +93,23 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                         img_text = detection[1]
                         total_text += " " + img_text  # Добавляем текст изображения к общему тексту текущей страницы
                     if text_q == 'y':
-                        print("Распознанный текст на странице:\n")
-                        print(text, '\n')  # Выводим распознанный текст страницы
+                        print("Распознанный текст на странице с изображения:\n")
+
+                print(total_text, '\n')  # Выводим распознанный текст страницы
+                        
+                for keyword in keywords:
+                    if keyword in found_keywords_set:
+                        continue  # Пропускаем ключевое слово, если оно уже было найдено
+                    key_words = keyword.split()  # Разбиваем ключевое слово на отдельные слова
+                    found_count = sum(word in total_text for word in key_words)  # Подсчитываем количество найденных слов на всех страницах
+                    # Вычисляем процент распознавания для ключа
+                    recognition_percentage = (found_count / len(key_words)) * 100
+                    if recognition_percentage >= threshold:
+                        print(f"Ключевое слово '{keyword}' добавлено  с процентом распознавания {recognition_percentage}% ")
+                        found_keywords_set.add(keyword)
+                        found_keywords.append(keyword)
+                    else: 
+                        print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}% \n")
 
                 if not found_date:
                 
