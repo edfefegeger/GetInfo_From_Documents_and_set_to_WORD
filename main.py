@@ -49,8 +49,8 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     # Вычисляем процент распознавания для ключа
                     recognition_percentage = (found_count / len(key_words)) * 100
                     if recognition_percentage >= threshold:
-                        print(f"Ключевое слово '{keyword}' найдено с процентом распознавания {recognition_percentage}% \n")
-                        total_found_keywords.append(keyword)
+                        print(f"Ключевое слово '{keyword}' добавлено  с процентом распознавания {recognition_percentage}% ")
+                        found_keywords.append(keyword)
                     else: 
                         print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}% \n")
 
@@ -78,10 +78,10 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     result = reader.readtext(image_bytes)
                     for detection in result:
                         img_text = detection[1]
-                        total_text += " " + img_text  # Добавляем текст изображения к тексту страницы
+                        text += " " + img_text  # Добавляем текст изображения к тексту страницы
                     if text_q == 'y':
                         print("Распознанный текст на странице:\n")
-                        print(total_text, '\n')  # Выводим распознанный текст страницы
+                        print(text, '\n')  # Выводим распознанный текст страницы
                         # print("Распознанный текст на странице:")
                         # print(text)  # Выводим распознанный текст страницы
 
@@ -94,8 +94,8 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     # Вычисляем процент распознавания для ключа
                     recognition_percentage = (found_count / len(key_words)) * 100
                     if recognition_percentage >= threshold:
-                        print(f"Ключевое слово '{keyword}' с процентом распознавания {recognition_percentage}% \n")
-                        total_found_keywords.append(keyword)
+                        print(f"Ключевое слово '{keyword}' добавлено с процентом распознавания {recognition_percentage}% ")
+                        found_keywords.append(keyword)
                     else: 
                         print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}% \n")
 
@@ -123,24 +123,17 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
             else:
                 if "End" in text:
                     # Вычисляем процент ключевых слов на всех страницах
-                    total_keyword_count = sum(sum(word in total_text for word in keyword.split()) for keyword in keywords)
-                    if total_text.strip():  # Проверяем, содержит ли total_text хотя бы одно слово
-                        total_keywords_percentage = (total_keyword_count / len(total_text.split())) * 100
-                    else:
-                        total_keywords_percentage = 0  # Устанавливаем процент ключевых слов равным нулю, если total_text пуст
-                    print(f"Суммарный процент ключевых слов до страницы 'End': {total_keywords_percentage}% \n")
-
-                    print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа. \n")
+                    print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
                     end_page = page_num + 1  # Конечная страница текущего документа
-                    update_word_table(word_path, keywords, total_found_keywords, found_date, start_page, end_page, found_outgoing_num, count)
+                    update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, count)
                     count += 1
-                    total_found_keywords = []
+                    found_keywords = []
                     found_date = None
                     found_outgoing_num = None
                     start_page = page_num + 2  # Начальная страница следующего документа      
 
     # Записываем информацию в файл Word после окончания обработки документа
-    return total_found_keywords, found_date
+    return found_keywords, found_date
 
 
 
@@ -442,7 +435,7 @@ if __name__ == "__main__":
     keys_path = "keys.docx"
     keywords = read_keys(keys_path)
     clear_word_table(word_path)  # Очищаем таблицу перед обработкой нового файла PDF
-    print("Таблица 'Result.docx' очищена")
+    print("Таблица 'Result.docx' очищена \n")
     count = 1
     found_keywords, found_date = process_pdf(file_path, keywords, word_path, threshold, languages, text_q, count)
     try:
