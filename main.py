@@ -23,6 +23,7 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
     found_keywords = []
     found_date = None  # Здесь будем хранить найденную дату
     found_outgoing_num = None
+    found_outgoing_num2 = None
     total_text = ""
     total_found_keywords = []
     start_page = 1  # Начальная страница текущего документа
@@ -68,6 +69,13 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                         print(f"Найден исходящий номер {outgoing_num} \n")
                         found_outgoing_num = outgoing_num
 
+
+                if not found_outgoing_num2:
+                    outgoing_num2 = find_first_matching_number2(text)
+                    if outgoing_num2:
+                        print(f"Найден входящий номер {outgoing_num2} \n")
+                        found_outgoing_num2 = outgoing_num2
+
             # Если на странице есть изображения, ищем текст в них
             images = page.get_images(full=True)
             if images:
@@ -106,6 +114,13 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                         print(f"Найден исходящий номер  {outgoing_num} \n")
                         found_outgoing_num = outgoing_num
 
+
+                if not found_outgoing_num2:
+                    outgoing_num2 = find_first_matching_number2(text)
+                    if outgoing_num2:
+                        print(f"Найден входящий номер {outgoing_num2} \n")
+                        found_outgoing_num2 = outgoing_num2
+
                 # Поиск даты после добавления текста изображения
                 if not found_date:
                     date = find_dates(text)
@@ -116,20 +131,23 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
             if len(pdf) == 1:  # Если документ содержит только одну страницу
                 print("Документ содержит только одну страницу. Завершение обработки. \n")
                 end_page = 1  # Конечная страница текущего документа
-                update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, count)
+                update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, found_outgoing_num2, count)
                 found_keywords = []
                 found_date = None
                 found_outgoing_num = None
+                found_outgoing_num2 = None
             else:
                 if "End" in text:
                     # Вычисляем процент ключевых слов на всех страницах
                     print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
                     end_page = page_num + 1  # Конечная страница текущего документа
-                    update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, count)
+                    update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, found_outgoing_num2, count)
                     count += 1
                     found_keywords = []
                     found_date = None
                     found_outgoing_num = None
+                    found_outgoing_num2 = None
+
                     start_page = page_num + 2  # Начальная страница следующего документа      
 
     # Записываем информацию в файл Word после окончания обработки документа
@@ -137,7 +155,7 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
 
 
 
-def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, count):
+def update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, found_outgoing_num2, count):
     doc = Document(word_path)
     table = doc.tables[0]
     outgoing_index = None  # Добавляем индекс для столбца с исходящим номером
@@ -321,16 +339,20 @@ def update_word_table(word_path, keywords, found_keywords, found_date, start_pag
     else:
         print("Столбец 'исходящие' не найден в таблице.")
 
+    if ingoing_index is not None:
+        ingoing_index = table.cell(new_row_index, ingoing_index)
 
-    ingoing_index = table.cell(new_row_index, ingoing_index)
-    ingoing_index.text = 'Тест'
-    ingoing_index.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-    ingoing_index.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
-    for paragraph in ingoing_index.paragraphs:
-        for run in paragraph.runs:
-            run.font.name = font_name
-            run.font.size = font_size
+        if found_outgoing_num2:
+            ingoing_index.text = found_outgoing_num2
 
+        ingoing_index.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        ingoing_index.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
+        for paragraph in ingoing_index.paragraphs:
+            for run in paragraph.runs:
+                run.font.name = font_name
+                run.font.size = font_size
+    else:
+        print("Столбец 'входящие' не найден в таблице.")
 
     list_num = table.cell(new_row_index, num_index + 1)
     list_num.text = str(count),'.'
