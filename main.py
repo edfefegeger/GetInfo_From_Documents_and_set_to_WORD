@@ -63,11 +63,11 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                         print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}% \n")
 
                 # Поиск даты, если она еще не была найдена
-                if not found_date:
-                    date = find_dates(text)
-                    if date:
-                        print("Дата найдена:", date, '\n')
-                        found_date = date 
+                # if not found_date:
+                #     date = find_dates(text)
+                #     if date:
+                #         print("Дата найдена:", date, '\n')
+                #         found_date = date 
 
                 # Поиск исходящего номера, если он еще не был найден
                 if not found_outgoing_num:
@@ -115,12 +115,12 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     else: 
                         print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}% \n")
 
-                if not found_date:
+                # if not found_date:
                 
-                    date = find_dates(text)
-                    if date:
-                        print("Дата найдена:", date, '\n')
-                        found_date = date 
+                #     date = find_dates(text)
+                #     if date:
+                #         print("Дата найдена:", date, '\n')
+                #         found_date = date 
 
                 # Поиск исходящего номера, если он еще не был найден
                 if not found_outgoing_num:
@@ -395,15 +395,15 @@ def find_first_matching_number2(text):
         return None
 
 
-def find_dates(text):
-    # Шаблон для поиска даты в формате DD.MM.YYYY
-    date_pattern = r'\b\d{2}[,.]?\d{2}[,.]?\d{4}\b'
-    # Находим первое совпадение с шаблоном
-    match = re.search(date_pattern, text)
-    if match:
-        return match.group()
-    else:
-        return None
+# def find_dates(text):
+#     # Шаблон для поиска даты в формате DD.MM.YYYY
+#     date_pattern = r'\b\d{2}[,.]?\d{2}[,.]?\d{4}\b'
+#     # Находим первое совпадение с шаблоном
+#     match = re.search(date_pattern, text)
+#     if match:
+#         return match.group()
+#     else:
+#         return None
 
 def read_keys(keys_path):
     keys = {}
