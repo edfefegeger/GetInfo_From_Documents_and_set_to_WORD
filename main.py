@@ -134,6 +134,19 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     if outgoing_num2:
                         print(f"Найден входящий номер {outgoing_num2} \n")
                         found_outgoing_num2 = outgoing_num2
+            
+            if text_q == 'y':
+            # После обработки каждой страницы PDF
+                for found_keyword in found_keywords:
+                    if found_keyword in keywords:
+                        # Получаем список слов из текущего ключа
+                        key_words_list = found_keyword.split()
+                        # Ищем слова из ключа, которые присутствуют в корректно опознанных ключах
+                        correct_words = [word for word in key_words_list if word in total_text]
+                        # Если найдены корректные слова из ключа, выводим их
+                        if correct_words:
+                            print(f"Корректно опознанные слова из ключа '{found_keyword}': {', '.join(correct_words)}")
+
 
             if len(pdf) == 1:  # Если документ содержит только одну страницу
                 print("Документ содержит только одну страницу. Завершение обработки. \n")
@@ -470,7 +483,7 @@ if __name__ == "__main__":
     file_path = input("Введите путь к файлу (PDF): ")
     threshold = int(input("Введите минимальное пороговое значение для распознавания текста в %: "))
     languages = input("Введите язык для использования (ru или uk или be) ")
-    text_q = input("Выводить распознаный текст? (y = да, n = нет) ")
+    text_q = input("Выводить распознаный текст на страницах и слова из каждого ключа? (y = да, n = нет) ")
 
     word_path = "result.docx"
     keys_path = "keys.docx"
