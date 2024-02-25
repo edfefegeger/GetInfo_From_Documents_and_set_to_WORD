@@ -27,7 +27,8 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
     total_text = ""
     total_found_keywords = []
     found_keywords = []
-
+    correct_keywords = []
+    text_for_print = ''
     start_page = 1  # Начальная страница текущего документа
 
     with fitz.open(pdf_path) as pdf:
@@ -40,7 +41,7 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
             if text_q == 'y':
                 print("Распознанный текст на странице с ручного ввода: \n")
 
-            print(text, '\n')  # Выводим распознанный текст страницы
+                print(text, '\n')  # Выводим распознанный текст страницы
 
             # Если на странице есть текст, обрабатываем ее
             if text:
@@ -92,10 +93,13 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     for detection in result:
                         img_text = detection[1]
                         total_text += " " + img_text  # Добавляем текст изображения к общему тексту текущей страницы
-                    if text_q == 'y':
-                        print("Распознанный текст на странице с изображения:\n")
+                        text_for_print += " " + img_text
+                if text_q == 'y':
+                    print("Распознанный текст на странице с изображения:\n")
 
-                print(total_text, '\n')  # Выводим распознанный текст страницы
+                    print(text_for_print, '\n')  # Выводим распознанный текст страницы
+                    text_for_print = ''
+
                         
                 for keyword in keywords:
                     if keyword in found_keywords_set:
