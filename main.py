@@ -28,7 +28,8 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
     found_outgoing_num2_cut = None
     total_text = ""
     start_page = 1
-
+    text_for_print = ''
+    
     with fitz.open(pdf_path) as pdf:
         for page_num in range(len(pdf)):
             page = pdf.load_page(page_num)
@@ -88,6 +89,12 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     for detection in result:
                         img_text = detection[1]
                         total_text += " " + img_text
+                        text_for_print += " " + img_text
+                if text_q == 'y':
+                    print("Распознанный текст на странице с изображения:\n")
+
+                    print(text_for_print, '\n')  # Выводим распознанный текст страницы
+                    text_for_print = ''
 
                 for keyword in keywords:
                     if keyword in found_keywords:
@@ -122,9 +129,7 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                             found_outgoing_num2_cut = outgoing_num2[9:]
                             print(f"Исходящий номер разделен на две части: {found_outgoing_num2}, {found_outgoing_num2_cut}")
 
-            if text_q == 'y':
-                print("Распознанный текст на странице с изображения:\n")
-                print(total_text, '\n')
+
 
             if text_q == 'y':
                 # Вывод корректно опознанных слов из ключа
