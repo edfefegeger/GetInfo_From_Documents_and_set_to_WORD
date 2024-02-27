@@ -20,18 +20,14 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
     reader = easyocr.Reader(['en', languages], gpu=True)
 
     # Поиск ключевых слов и даты
-    found_keywords_set = set()
-    found_date = None  # Здесь будем хранить найденную дату
+    found_keywords = []  # Изменение: используем список для хранения ключевых слов
+    found_date = None
     found_outgoing_num = None
     found_outgoing_num2 = None
     found_outgoing_num_cut = None
     found_outgoing_num2_cut = None
     total_text = ""
-    total_found_keywords = []
-    found_keywords = []
-    correct_keywords = []
-    text_for_print = ''
-    start_page = 1  # Начальная страница текущего документа
+    start_page = 1
 
     with fitz.open(pdf_path) as pdf:
         for page_num in range(len(pdf)):
@@ -42,42 +38,29 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
 
             if text_q == 'y':
                 print("Распознанный текст на странице с ручного ввода: \n")
+                print(text, '\n')
 
-                print(text, '\n')  # Выводим распознанный текст страницы
-
-            # Если на странице есть текст, обрабатываем ее
             if text:
-                total_text += text  # Добавляем текст текущей страницы к общему тексту
+                total_text += text
 
                 # Поиск ключевых слов
-# Поиск ключевых слов
                 for keyword in keywords:
-                    if keyword in found_keywords_set:
-                        continue  # Пропускаем ключевое слово, если оно уже было найдено
-                    key_words = keyword.split()  # Разбиваем ключевое слово на отдельные слова
-                    found_unique_words = set(word for word in key_words if word in total_text)  # Находим уникальные слова из ключевой фразы, которые присутствуют на странице
-                    # Вычисляем процент распознавания для ключа
-                    recognition_percentage = (len(found_unique_words) / len(key_words)) * 100
-                    if recognition_percentage >= threshold:
-                        print(f"Ключевое слово '{keyword}' добавлено  с процентом распознавания {recognition_percentage}% ")
-                        found_keywords_set.add(keyword)
+                    if keyword in found_keywords:
+                        continue
+                    key_words = keyword.split()
+                    found_count = sum(word in total_text for word in key_words)
+                    recognition_percentage = (found_count / len(key_words)) * 100
+                    if recognition_percentage >= threshold and all(word in total_text for word in key_words):
+                        print(f"Ключевое слово '{keyword}' добавлено с процентом распознавания {recognition_percentage}%")
                         found_keywords.append(keyword)
-                    else: 
-                        print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}% \n")
-
-
-                # Поиск даты, если она еще не была найдена
-                # if not found_date:
-                #     date = find_dates(text)
-                #     if date:
-                #         print("Дата найдена:", date, '\n')
-                #         found_date = date 
+                    else:
+                        print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}%")
 
                 # Поиск исходящего номера, если он еще не был найден
                 if not found_outgoing_num:
                     outgoing_num = find_first_matching_number(text)
                     if outgoing_num:
-                        print(f"Найден исходящий номер {outgoing_num} \n")
+                        print(f"Найден исходящий номер {outgoing_num}")
                         found_outgoing_num = outgoing_num
                         if len(found_outgoing_num) >= 10:
                             found_outgoing_num = outgoing_num[:9]
@@ -87,14 +70,14 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                 if not found_outgoing_num2:
                     outgoing_num2 = find_first_matching_number2(text)
                     if outgoing_num2:
-                        print(f"Найден входящий номер {outgoing_num2} \n")
+                        print(f"Найден входящий номер {outgoing_num2}")
                         found_outgoing_num2 = outgoing_num2
                         if len(found_outgoing_num2) >= 10:
                             found_outgoing_num2 = outgoing_num2[:9]
                             found_outgoing_num2_cut = outgoing_num2[9:]
                             print(f"Исходящий номер разделен на две части: {found_outgoing_num2}, {found_outgoing_num2_cut}")
 
-            # Если на странице есть изображения, ищем текст в них
+            # Проверка изображений на странице
             images = page.get_images(full=True)
             if images:
                 for img_index, img in enumerate(images):
@@ -104,75 +87,59 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     result = reader.readtext(image_bytes)
                     for detection in result:
                         img_text = detection[1]
-                        total_text += " " + img_text  # Добавляем текст изображения к общему тексту текущей страницы
-                        text_for_print += " " + img_text
-                if text_q == 'y':
-                    print("Распознанный текст на странице с изображения:\n")
+                        total_text += " " + img_text
 
-                    print(text_for_print, '\n')  # Выводим распознанный текст страницы
-                    text_for_print = ''
-
-                        
                 for keyword in keywords:
-                    if keyword in found_keywords_set:
-                        continue  # Пропускаем ключевое слово, если оно уже было найдено
-                    key_words = keyword.split()  # Разбиваем ключевое слово на отдельные слова
-                    found_unique_words = set(word for word in key_words if word in total_text)  # Находим уникальные слова из ключевой фразы, которые присутствуют на странице
-                    # Вычисляем процент распознавания для ключа
-                    recognition_percentage = (len(found_unique_words) / len(key_words)) * 100
-                    if recognition_percentage >= threshold:
-                        print(f"Ключевое слово '{keyword}' добавлено  с процентом распознавания {recognition_percentage}% ")
-                        found_keywords_set.add(keyword)
+                    if keyword in found_keywords:
+                        continue
+                    key_words = keyword.split()
+                    found_count = sum(word in total_text for word in key_words)
+                    recognition_percentage = (found_count / len(key_words)) * 100
+                    if recognition_percentage >= threshold and all(word in total_text for word in key_words):
+                        print(f"Ключевое слово '{keyword}' добавлено с процентом распознавания {recognition_percentage}%")
                         found_keywords.append(keyword)
-                    else: 
-                        print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}% \n")
-
-                # if not found_date:
-                
-                #     date = find_dates(text)
-                #     if date:
-                #         print("Дата найдена:", date, '\n')
-                #         found_date = date 
+                    else:
+                        print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}%")
 
                 # Поиск исходящего номера, если он еще не был найден
                 if not found_outgoing_num:
                     outgoing_num = find_first_matching_number(text)
                     if outgoing_num:
-                        print(f"Найден исходящий номер {outgoing_num} \n")
+                        print(f"Найден исходящий номер {outgoing_num}")
                         found_outgoing_num = outgoing_num
                         if len(found_outgoing_num) >= 10:
                             found_outgoing_num = outgoing_num[:9]
                             found_outgoing_num_cut = outgoing_num[9:]
                             print(f"Исходящий номер разделен на две части: {found_outgoing_num}, {found_outgoing_num_cut}")
-                        
+
                 if not found_outgoing_num2:
                     outgoing_num2 = find_first_matching_number2(text)
                     if outgoing_num2:
-                        print(f"Найден входящий номер {outgoing_num2} \n")
+                        print(f"Найден входящий номер {outgoing_num2}")
                         found_outgoing_num2 = outgoing_num2
                         if len(found_outgoing_num2) >= 10:
                             found_outgoing_num2 = outgoing_num2[:9]
                             found_outgoing_num2_cut = outgoing_num2[9:]
                             print(f"Исходящий номер разделен на две части: {found_outgoing_num2}, {found_outgoing_num2_cut}")
 
+            if text_q == 'y':
+                print("Распознанный текст на странице с изображения:\n")
+                print(total_text, '\n')
 
             if text_q == 'y':
-            # После обработки каждой страницы PDF
+                # Вывод корректно опознанных слов из ключа
                 for found_keyword in found_keywords:
-                    if found_keyword in keywords:
-                        # Получаем список слов из текущего ключа
-                        key_words_list = found_keyword.split()
-                        # Ищем слова из ключа, которые присутствуют в корректно опознанных ключах
-                        correct_words = [word for word in key_words_list if word in total_text]
-                        # Если найдены корректные слова из ключа, выводим их
-                        if correct_words:
-                            print(f"Корректно опознанные слова из ключа '{found_keyword}': {', '.join(correct_words)}")
+                    key_words_list = found_keyword.split()
+                    correct_words = [word for word in key_words_list if word in total_text]
+                    if correct_words:
+                        print(f"Корректно опознанные слова из ключа '{found_keyword}': {', '.join(correct_words)}")
 
-
-            if len(pdf) == 1:  # Если документ содержит только одну страницу
-                print("Документ содержит только одну страницу. Завершение обработки. \n")
-                end_page = 1  # Конечная страница текущего документа
-                update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, found_outgoing_num2, count, found_outgoing_num2_cut, found_outgoing_num_cut)
+            if len(pdf) == 1:
+                print("Документ содержит только одну страницу. Завершение обработки.\n")
+                end_page = 1
+                update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page,
+                                   found_outgoing_num, found_outgoing_num2, count, found_outgoing_num2_cut,
+                                   found_outgoing_num_cut)
                 found_keywords = []
                 found_date = None
                 found_outgoing_num = None
@@ -181,26 +148,25 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                 found_outgoing_num2_cut = None
             else:
                 if "End" in text:
-                    # Вычисляем процент ключевых слов на всех страницах
                     print(f"Найдена пометка 'End' на странице {page_num + 1}. Завершение документа.")
-                    end_page = page_num + 1  # Конечная страница текущего документа
-                    update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page, found_outgoing_num, found_outgoing_num2, count, found_outgoing_num2_cut, found_outgoing_num_cut)
+                    end_page = page_num + 1
+                    update_word_table(word_path, keywords, found_keywords, found_date, start_page, end_page,
+                                       found_outgoing_num, found_outgoing_num2, count, found_outgoing_num2_cut,
+                                       found_outgoing_num_cut)
 
                     count += 1
-                    found_keywords_set = set()  # Сбрасываем найденные ключевые слова
+                    found_keywords = []
                     found_date = None
                     found_outgoing_num = None
                     found_outgoing_num2 = None
                     found_outgoing_num_cut = None
                     found_outgoing_num2_cut = None
-                    total_text = ""  # Сбрасываем общий текст
-                    found_keywords = []  # Сбрасываем найденные ключевые слова для текущего документа
+                    total_text = ""
 
-                    start_page = page_num + 2  # Начальная страница следующего документа      
-
-    # Записываем информацию в файл Word после окончания обработки д
+                    start_page = page_num + 2
 
     return found_keywords, found_date
+
 
 
 
