@@ -50,19 +50,21 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                 total_text += text  # Добавляем текст текущей страницы к общему тексту
 
                 # Поиск ключевых слов
+# Поиск ключевых слов
                 for keyword in keywords:
                     if keyword in found_keywords_set:
                         continue  # Пропускаем ключевое слово, если оно уже было найдено
                     key_words = keyword.split()  # Разбиваем ключевое слово на отдельные слова
-                    found_count = sum(word in total_text for word in key_words)  # Подсчитываем количество найденных слов на всех страницах
+                    found_unique_words = set(word for word in key_words if word in total_text)  # Находим уникальные слова из ключевой фразы, которые присутствуют на странице
                     # Вычисляем процент распознавания для ключа
-                    recognition_percentage = (found_count / len(key_words)) * 100
+                    recognition_percentage = (len(found_unique_words) / len(key_words)) * 100
                     if recognition_percentage >= threshold:
                         print(f"Ключевое слово '{keyword}' добавлено  с процентом распознавания {recognition_percentage}% ")
                         found_keywords_set.add(keyword)
                         found_keywords.append(keyword)
                     else: 
                         print(f"Ключевое слово '{keyword}' не добавлено с процентом распознавания {recognition_percentage}% \n")
+
 
                 # Поиск даты, если она еще не была найдена
                 # if not found_date:
@@ -115,9 +117,9 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                     if keyword in found_keywords_set:
                         continue  # Пропускаем ключевое слово, если оно уже было найдено
                     key_words = keyword.split()  # Разбиваем ключевое слово на отдельные слова
-                    found_count = sum(word in total_text for word in key_words)  # Подсчитываем количество найденных слов на всех страницах
+                    found_unique_words = set(word for word in key_words if word in total_text)  # Находим уникальные слова из ключевой фразы, которые присутствуют на странице
                     # Вычисляем процент распознавания для ключа
-                    recognition_percentage = (found_count / len(key_words)) * 100
+                    recognition_percentage = (len(found_unique_words) / len(key_words)) * 100
                     if recognition_percentage >= threshold:
                         print(f"Ключевое слово '{keyword}' добавлено  с процентом распознавания {recognition_percentage}% ")
                         found_keywords_set.add(keyword)
