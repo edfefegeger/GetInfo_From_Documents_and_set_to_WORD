@@ -9,8 +9,6 @@ from fuzzywuzzy import fuzz
 import difflib
 
 
-
-
 def clear_word_table(word_path):
     
     doc = Document(word_path)
@@ -163,16 +161,14 @@ def process_pdf(pdf_path, keywords, word_path, threshold, languages, text_q, cou
                             found_outgoing_num2 = outgoing_num2[:9]
                             found_outgoing_num2_cut = outgoing_num2[9:]
                             print(f"Исходящий номер разделен на две части: {found_outgoing_num2}, {found_outgoing_num2_cut}")
-
-
             if text_q == 'y':
-            # После обработки каждой страницы PDF
+                # После обработки каждой страницы PDF
                 for found_keyword in found_keywords:
                     if found_keyword in keywords:
                         # Получаем список слов из текущего ключа
                         key_words_list = found_keyword.split()
                         # Ищем слова из ключа, которые присутствуют в корректно опознанных ключах
-                        correct_words = [word for word in key_words_list if word in total_text]
+                        correct_words = [word for word in key_words_list if find_most_similar_word(word, total_text.split()) is not None]
                         # Если найдены корректные слова из ключа, выводим их
                         if correct_words:
                             print(f"Корректно опознанные слова из ключа '{found_keyword}': {', '.join(correct_words)}")
@@ -563,9 +559,10 @@ def read_keys(keys_path):
 if __name__ == "__main__":
     file_path = input("Введите путь к файлу (PDF): ")
     threshold = int(input("Введите минимальное пороговое значение для распознавания текста в %: "))
+    MIN_SIMILARITY = float(input("Введите минимальное пороговое значение для распознавания слова в ключе (0.1, 0.7, 0.9): "))
     languages = input("Введите язык для использования (ru или uk или be) ")
     text_q = input("Выводить распознаный текст на страницах и слова из каждого ключа? (y = да, n = нет) ")
-    MIN_SIMILARITY = float(input("Введите минимальное пороговое значение для распознавания слова в ключе (0.1, 0.7, 0.9): "))
+    
 
     word_path = "result.docx"
     keys_path = "keys.docx"
